@@ -1,0 +1,10 @@
+{
+  "printers": [
+    "4504(64bit)"
+  ],
+  "autoDetect": true,
+  "fallbackPrinters": [
+    "Microsoft Print to PDF",
+    "Microsoft XPS Document Writer"
+  ]
+}
