@@ -53,9 +53,9 @@
             <tbody>
               <tr>
                 <td class="summary-label">{{ destGroup.destination_name }} 合計</td>
-                <td class="summary-value">受注数: {{ destGroup.totalQuantity }}</td>
+                <td class="summary-value">受注箱数: {{ destGroup.totalQuantity }}</td>
                 <td class="summary-value">受注本数: {{ destGroup.totalUnits }}</td>
-                <td class="summary-value">出荷No件数: {{ destGroup.shippingNoCount }}</td>
+                <td class="summary-value">出荷パレ数: {{ destGroup.shippingNoCount }}</td>
               </tr>
             </tbody>
           </table>
@@ -142,11 +142,11 @@ const groupedData = computed(() => {
 <style scoped>
 @page {
   size: A4 portrait;
-  margin: 2cm;
+  margin: 0.8cm;
 }
 
 .shipping-report {
-  font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'MS Gothic', sans-serif;
+  font-family:  'Yu Gothic', 'Hiragino Sans','Meiryo', 'MS Gothic', sans-serif;
   color: #1a1a1a;
   background: #fff;
   padding: 24px;
@@ -176,7 +176,6 @@ const groupedData = computed(() => {
   border-bottom: 3px solid #2c3e50;
   padding: 20px 0;
   margin-bottom: 30px;
-  font-size: 14px;
   background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
   border-radius: 8px 8px 0 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -198,15 +197,18 @@ const groupedData = computed(() => {
   flex: 1;
   padding: 0 15px;
   font-weight: 600;
-  color: #34495e;
+  color: #000000;
 }
 
 .header-left {
   text-align: left;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .header-right {
   text-align: right;
+  font-size: 14px;
 }
 
 .header-center {
@@ -245,21 +247,20 @@ const groupedData = computed(() => {
 
 .destination-section {
   margin-bottom: 30px;
-  page-break-inside: avoid;
-  background: #ffffff;
+  background: transparent;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e9ecef;
+  box-shadow: none;
+  border: none;
 }
 
 .destination-title {
   font-size: 16px;
   font-weight: 700;
   margin: 0;
-  padding: 15px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 5px 20px;
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  color: rgb(7, 7, 7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
@@ -269,25 +270,26 @@ const groupedData = computed(() => {
   width: 100%;
   border-collapse: collapse;
   margin: 0;
-  background: #ffffff;
+  background: transparent;
 }
 
 .report-table th {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  color: #2c3e50;
+  background: transparent;
+  color: black;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 12px 8px;
+  padding: 6px 4px;
   text-align: center;
   border: none;
   border-bottom: 2px solid #dee2e6;
 }
 
 .report-table td {
-  padding: 10px 8px;
-  font-size: 11px;
+  padding: 6px 4px;
+  font-size: 14px;
+  color: black;
   text-align: left;
   border: none;
   border-bottom: 1px solid #f1f3f4;
@@ -295,11 +297,11 @@ const groupedData = computed(() => {
 }
 
 .report-table tbody tr:nth-child(even) {
-  background: rgba(248, 249, 250, 0.5);
+  background: transparent;
 }
 
 .report-table tbody tr:hover {
-  background: rgba(102, 126, 234, 0.05);
+  background: transparent;
 }
 
 /* 表格列样式 */
@@ -307,7 +309,6 @@ const groupedData = computed(() => {
 .report-table td:nth-child(1) {
   width: 20%;
   font-family: 'Courier New', monospace;
-  color: #8e44ad;
   font-weight: 600;
 }
 
@@ -315,14 +316,12 @@ const groupedData = computed(() => {
 .report-table td:nth-child(2) {
   width: 30%;
   font-weight: 600;
-  color: #2c3e50;
 }
 
 .report-table th:nth-child(3),
 .report-table td:nth-child(3) {
   width: 15%;
   text-align: center;
-  color: #3498db;
   font-weight: 500;
 }
 
@@ -330,7 +329,6 @@ const groupedData = computed(() => {
 .report-table td:nth-child(4) {
   width: 12%;
   text-align: center;
-  color: #27ae60;
   font-weight: 600;
 }
 
@@ -338,7 +336,6 @@ const groupedData = computed(() => {
 .report-table td:nth-child(5) {
   width: 12%;
   text-align: center;
-  color: #e67e22;
   font-weight: 600;
 }
 
@@ -346,14 +343,12 @@ const groupedData = computed(() => {
 .report-table td:nth-child(6) {
   width: 11%;
   text-align: center;
-  color: #95a5a6;
-  font-size: 10px;
 }
 
 .destination-summary {
   margin: 0;
   padding: 15px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: transparent;
   border-top: 1px solid #dee2e6;
 }
 
@@ -364,42 +359,42 @@ const groupedData = computed(() => {
 }
 
 .summary-table td {
-  padding: 8px 12px;
+  padding: 4px 5px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   border: none;
   background: transparent;
 }
 
 .summary-label {
-  width: 25%;
+  width: 30%;
   text-align: left;
-  color: #2c3e50;
+  color: #0c0c0c;
   font-size: 13px;
 }
 
 .summary-value {
   width: 25%;
   text-align: center;
-  color: #34495e;
+  color: #0a0a0a;
 }
 
 .summary-value:nth-child(2) {
-  color: #27ae60;
+  color: #0c0c0c;
 }
 
 .summary-value:nth-child(3) {
-  color: #e67e22;
+  color: #0c0c0c;
 }
 
 .summary-value:nth-child(4) {
-  color: #8e44ad;
+  color: #0a0a0a;
 }
 
 .separator-line {
   width: 100%;
   height: 2px;
-  background: linear-gradient(to right, #667eea, #764ba2);
+  /* background: linear-gradient(to right, #667eea, #764ba2); */
   margin-top: 12px;
   border-radius: 1px;
   box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
@@ -411,9 +406,13 @@ const groupedData = computed(() => {
   }
 
   .shipping-report {
-    padding: 0;
+    padding: 24px;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'MS Gothic', sans-serif;
+    color: #1a1a1a;
+    background: #fff;
+    line-height: 1.5;
   }
 
   .shipping-report::before {
@@ -421,19 +420,228 @@ const groupedData = computed(() => {
   }
 
   .report-header {
-    box-shadow: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 3px solid #2c3e50;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
+    border-radius: 8px 8px 0 0;
+    position: relative;
+  }
+
+  .report-header::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, #667eea, #764ba2);
+  }
+
+  .header-left {
+    flex: 1;
+    padding: 0 15px;
+    font-weight: 700;
+    color: #000000;
+    text-align: left;
+    font-size: 18px;
+  }
+
+  .header-center {
+    flex: 2;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .header-right {
+    flex: 1;
+    padding: 0 15px;
+    font-weight: 600;
+    color: #000000;
+    text-align: right;
+    font-size: 14px;
+  }
+
+  .report-title {
+    font-size: 26px;
+    font-weight: 900;
+    margin: 0;
+    color: #2c3e50;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 1.5px;
+    position: relative;
+  }
+
+  .report-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(to right, #e74c3c, #c0392b);
+    border-radius: 2px;
+  }
+
+  .report-body {
+    width: 100%;
+    margin-top: 20px;
   }
 
   .destination-section {
-    box-shadow: none;
-    border: 1px solid #dee2e6;
-    page-break-before: auto;
-    margin-bottom: 25px;
+    margin-bottom: 30px;
+    background: transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    border: none;
+  }
+
+  .destination-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    padding: 5px 20px;
+    color: rgb(7, 7, 7);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    background: transparent;
+  }
+
+  .report-table th {
+    background: transparent;
+    color: black;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 4px;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  .report-table td {
+    padding: 6px 4px;
+    font-size: 14px;
+    color: black;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+  }
+
+  .report-table tbody tr:nth-child(even) {
+    background: transparent;
   }
 
   .report-table tbody tr:hover {
     background: transparent;
+  }
+
+  .destination-summary {
+    margin: 0;
+    padding: 15px 20px;
+    background: transparent;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+  }
+
+  .summary-table td {
+    padding: 4px 5px;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    background: transparent;
+  }
+
+  .summary-label {
+    width: 30%;
+    text-align: left;
+    color: #0c0c0c;
+    font-size: 13px;
+  }
+
+  .summary-value {
+    width: 25%;
+    text-align: center;
+    color: #0a0a0a;
+  }
+
+  .summary-value:nth-child(2) {
+    color: #0c0c0c;
+  }
+
+  .summary-value:nth-child(3) {
+    color: #0c0c0c;
+  }
+
+  .summary-value:nth-child(4) {
+    color: #0a0a0a;
+  }
+
+  .separator-line {
+    width: 100%;
+    height: 2px;
+    margin-top: 12px;
+    border-radius: 1px;
+    background: #000;
+  }
+
+  /* 表格列样式 */
+  .report-table th:nth-child(1),
+  .report-table td:nth-child(1) {
+    width: 20%;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+  }
+
+  .report-table th:nth-child(2),
+  .report-table td:nth-child(2) {
+    width: 30%;
+    font-weight: 600;
+  }
+
+  .report-table th:nth-child(3),
+  .report-table td:nth-child(3) {
+    width: 15%;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .report-table th:nth-child(4),
+  .report-table td:nth-child(4) {
+    width: 12%;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .report-table th:nth-child(5),
+  .report-table td:nth-child(5) {
+    width: 12%;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .report-table th:nth-child(6),
+  .report-table td:nth-child(6) {
+    width: 11%;
+    text-align: center;
   }
 }
 

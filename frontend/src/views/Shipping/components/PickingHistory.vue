@@ -32,36 +32,6 @@
           />
         </el-form-item>
 
-        <el-form-item label="担当者">
-          <el-select
-            v-model="filters.picker_id"
-            placeholder="全ての担当者"
-            clearable
-            style="width: 180px"
-            @change="handleFilterChange"
-          >
-            <el-option
-              v-for="picker in pickerOptions"
-              :key="picker.id"
-              :label="picker.name"
-              :value="picker.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="状態">
-          <el-select
-            v-model="filters.status"
-            placeholder="全て"
-            clearable
-            style="width: 140px"
-            @change="handleFilterChange"
-          >
-            <el-option label="未ピッキング" value="pending" />
-            <el-option label="ピッキング済" value="completed" />
-          </el-select>
-        </el-form-item>
-
         <el-form-item>
           <el-button type="primary" @click="refreshData" :loading="loading.search">
             <el-icon><Search /></el-icon>
@@ -99,7 +69,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ historyStats.pendingTasks }}</div>
-              <div class="stat-label">未ピッキング数</div>
+              <div class="stat-label">総未ピッキング数</div>
             </div>
           </div>
         </el-card>
@@ -113,7 +83,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ historyStats.completedTasks }}</div>
-              <div class="stat-label">ピッキング済数</div>
+              <div class="stat-label">総ピッキング済数</div>
             </div>
           </div>
         </el-card>
@@ -127,7 +97,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-number">{{ historyStats.completionRate }}%</div>
-              <div class="stat-label">ピッキング完了率</div>
+              <div class="stat-label">全体完了率</div>
             </div>
           </div>
         </el-card>
@@ -219,6 +189,11 @@
                 min-width="150"
                 show-overflow-tooltip
               />
+              <el-table-column label="出荷日" width="120">
+                <template #default="{ row }">
+                  {{ formatDate(row.shipping_date) }}
+                </template>
+              </el-table-column>
               <el-table-column label="数量" min-width="100" align="right">
                 <template #default="{ row }">
                   {{ row.picked_quantity || 0 }}/{{ row.confirmed_boxes || 0 }}
@@ -244,118 +219,6 @@
         </el-card>
       </el-col>
     </el-row>
-
-    <!-- 新版担当者绩效分析 -->
-    <el-card class="performance-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <div class="card-title">
-            <el-icon><Trophy /></el-icon>
-            <span>担当者パフォーマンス分析 (納入先別)</span>
-          </div>
-          <el-button type="primary" plain size="small" @click="openDestinationPickerModal">
-            <el-icon><Setting /></el-icon>
-            納入先担当設定
-          </el-button>
-        </div>
-      </template>
-      <!-- 绩效分析筛选器 -->
-      <div class="performance-filters">
-        <el-form :inline="true" :model="performanceFilters" size="small">
-          <el-form-item label="期間">
-            <el-date-picker
-              v-model="performanceFilters.dateRange"
-              type="daterange"
-              range-separator="〜"
-              start-placeholder="開始日"
-              end-placeholder="終了日"
-              value-format="YYYY-MM-DD"
-              style="width: 240px"
-            />
-          </el-form-item>
-          <el-form-item label="担当者">
-            <el-select
-              v-model="performanceFilters.picker_ids"
-              placeholder="全ての担当者"
-              clearable
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              style="width: 220px"
-            >
-              <el-option
-                v-for="picker in pickerOptions"
-                :key="picker.id"
-                :label="picker.name"
-                :value="picker.id"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button
-              type="primary"
-              @click="refreshPerformanceData"
-              :loading="loading.performance"
-            >
-              <el-icon><Search /></el-icon>
-              分析
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <!-- 绩效数据表格 -->
-      <el-table
-        :data="performanceData"
-        style="width: 100%"
-        row-key="picker_id"
-        v-loading="loading.performance"
-        element-loading-text="分析データを読み込み中..."
-        border
-        stripe
-      >
-        <el-table-column type="expand">
-          <template #default="props">
-            <div class="destination-table-container">
-              <h4>{{ props.row.picker_name }} - 納入先別詳細</h4>
-              <el-table :data="props.row.destinations" border size="small">
-                <el-table-column prop="destination_name" label="納入先" min-width="180" />
-                <el-table-column prop="total_tasks" label="タスク数" width="100" align="center" />
-                <el-table-column prop="completed_tasks" label="完了数" width="100" align="center" />
-                <el-table-column prop="completion_rate" label="完了率" width="100" align="center">
-                  <template #default="{ row }">
-                    <el-progress
-                      :percentage="row.completion_rate"
-                      :color="getCompletionColor(row.completion_rate)"
-                    />
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="#" width="50" align="center">
-          <template #default="scope">
-            <div class="rank-badge" :class="`rank-${scope.$index + 1}`">
-              {{ scope.$index + 1 }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="picker_name" label="担当者名" min-width="150" />
-        <el-table-column prop="total_tasks" label="総タスク数" width="120" align="center" />
-        <el-table-column prop="total_completed" label="総完了数" width="120" align="center" />
-        <el-table-column prop="overall_completion_rate" label="総完了率" min-width="150">
-          <template #default="{ row }">
-            <el-progress
-              :text-inside="true"
-              :stroke-width="20"
-              :percentage="row.overall_completion_rate"
-              :color="getCompletionColor(row.overall_completion_rate)"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
 
     <!-- 任务详情对话框 -->
     <el-dialog v-model="taskDetailVisible" title="ピッキング作業詳細" width="600px">
@@ -413,52 +276,12 @@
         <el-button @click="taskDetailVisible = false">閉じる</el-button>
       </template>
     </el-dialog>
-
-    <!-- 纳品先担当设置对话框 -->
-    <el-dialog
-      v-model="destinationPickerVisible"
-      title="納入先担当 設定"
-      width="70%"
-      @close="destinationPickerVisible = false"
-    >
-      <el-table
-        :data="destinationPickerList"
-        v-loading="loading.destinationPicker"
-        height="500"
-        border
-        stripe
-      >
-        <el-table-column prop="destination_cd" label="納入先CD" width="150" />
-        <el-table-column prop="destination_name" label="納入先名" min-width="200" />
-        <el-table-column prop="picker_id" label="担当者" width="250">
-          <template #default="{ row }">
-            <el-select
-              v-model="row.picker_id"
-              placeholder="担当者を選択"
-              clearable
-              filterable
-              @change="handlePickerChange(row)"
-            >
-              <el-option
-                v-for="user in userOptions"
-                :key="user.username"
-                :label="user.name"
-                :value="user.username"
-              />
-            </el-select>
-          </template>
-        </el-table-column>
-      </el-table>
-      <template #footer>
-        <el-button @click="destinationPickerVisible = false">閉じる</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, reactive, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   Search,
   Refresh,
@@ -469,22 +292,13 @@ import {
   DataAnalysis,
   Clock,
   Check,
-  Trophy,
-  Setting,
 } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
 import {
   getPickingHistoryData,
   getPendingTasks,
   getCompletedTasks,
   getPickerOptions,
-  getPerformanceByDestination,
 } from '@/api/shipping/picking'
-import {
-  getUserOptions,
-  getDeliveryDestinations,
-  updateDestinationPicker,
-} from '@/api/master/destinationMaster'
 
 // 接口定义
 interface PickingTask {
@@ -508,6 +322,7 @@ interface PickingTask {
   remarks?: string
   created_at?: string
   completionRate: number
+  shipping_date?: string
 }
 
 interface HistoryStats {
@@ -515,22 +330,6 @@ interface HistoryStats {
   completedTasks: number
   pendingTasks: number
   completionRate: number
-}
-
-interface DestinationPerformance {
-  destination_name: string
-  total_tasks: number
-  completed_tasks: number
-  completion_rate: number
-}
-
-interface PerformerWithDestinations {
-  picker_id: string
-  picker_name: string
-  total_tasks: number
-  total_completed: number
-  overall_completion_rate: number
-  destinations: DestinationPerformance[]
 }
 
 interface PickerOption {
@@ -544,28 +343,52 @@ const loading = ref({
   search: false,
   pendingTasks: false,
   completedTasks: false,
-  performance: false,
-  destinationPicker: false,
 })
 
-const filters = ref({
-  picker_id: '',
-  status: '',
-})
+// 简化筛选条件，只保留期间
+const filters = ref({})
 
-const dateRange = ref<[string, string]>([
-  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  new Date().toISOString().slice(0, 10),
-])
+// 日本时区工具函数
+const getJapanDate = (date?: Date): Date => {
+  const targetDate = date || new Date()
+  return new Date(targetDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }))
+}
 
-// 绩效分析筛选器
-const performanceFilters = ref({
-  dateRange: [
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
-    new Date().toISOString().slice(0, 10),
-  ] as [string, string],
-  picker_ids: [] as string[],
-})
+const formatDateString = (date: Date): string => {
+  return (
+    date.getFullYear() +
+    '-' +
+    String(date.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(date.getDate()).padStart(2, '0')
+  )
+}
+
+// 默认期间为当月1号到月末（日本时区）
+const getCurrentMonthRange = (): [string, string] => {
+  // 使用日本时区获取当前日期
+  const japanTime = getJapanDate()
+  const year = japanTime.getFullYear()
+  const month = japanTime.getMonth()
+
+  // 当月1号（日本时区）
+  const firstDay = new Date(year, month, 1)
+  const firstDayStr = formatDateString(firstDay)
+
+  // 当月最后一天（日本时区）
+  const lastDay = new Date(year, month + 1, 0)
+  const lastDayStr = formatDateString(lastDay)
+
+  console.log('🗾 日本時区当月期間:', {
+    localTime: new Date().toLocaleString(),
+    japanTime: japanTime.toLocaleString(),
+    range: [firstDayStr, lastDayStr],
+  })
+
+  return [firstDayStr, lastDayStr]
+}
+
+const dateRange = ref<[string, string]>(getCurrentMonthRange())
 
 // 数据状态
 const historyStats = reactive<HistoryStats>({
@@ -578,14 +401,10 @@ const historyStats = reactive<HistoryStats>({
 const pickerOptions = ref<PickerOption[]>([])
 const pendingTasks = ref<PickingTask[]>([])
 const completedTasks = ref<PickingTask[]>([])
-const performanceData = ref<PerformerWithDestinations[]>([])
-const userOptions = ref<{ username: string; name: string }[]>([])
-const destinationPickerList = ref<any[]>([])
 
 // 任务详情
 const taskDetailVisible = ref(false)
 const selectedTask = ref<PickingTask | null>(null)
-const destinationPickerVisible = ref(false)
 
 // 分页
 const pendingCurrentPage = ref(1)
@@ -652,7 +471,7 @@ async function fetchPickerOptions() {
     const response = await getPickerOptions()
     console.log('👥 担当者選択肢API応答:', response)
 
-    // 处理不同的响应格式并应用过滤
+    // 处理不同的响应格式
     let data
     if (response && response.data) {
       data = response.data
@@ -662,10 +481,10 @@ async function fetchPickerOptions() {
       data = []
     }
 
-    // 应用数据过滤
-    const filteredData = filterProductData(data)
-    pickerOptions.value = Array.isArray(filteredData) ? filteredData : []
+    // 担当者数据不需要产品过滤，直接使用
+    pickerOptions.value = Array.isArray(data) ? data : []
     console.log('👥 更新後の担当者選択肢数:', pickerOptions.value.length)
+    console.log('👥 担当者選択肢詳細:', pickerOptions.value)
   } catch (error) {
     console.error('担当者選択肢取得エラー:', error)
     pickerOptions.value = []
@@ -678,10 +497,8 @@ async function fetchHistoryStats() {
     const params = {
       start_date: dateRange.value[0],
       end_date: dateRange.value[1],
-      picker_id: filters.value.picker_id,
-      status: filters.value.status,
       page: 1,
-      limit: 1000,
+      limit: 10000, // 获取所有数据进行统计
     }
 
     console.log('📊 履歴統計データ取得開始:', params)
@@ -691,16 +508,40 @@ async function fetchHistoryStats() {
     // 处理响应数据
     const data = response?.data || response
 
-    if (data && data.stats) {
+    if (data) {
       // 应用数据过滤
       const filteredData = filterProductData(data)
 
-      const total = filteredData.stats.totalTasks || 0
-      const completed = filteredData.stats.completedTasks || 0
-      historyStats.totalTasks = total
-      historyStats.completedTasks = completed
-      historyStats.pendingTasks = filteredData.stats.pendingTasks || 0
-      historyStats.completionRate = total ? Number(((completed / total) * 100).toFixed(1)) : 0
+      // 重新计算统计数据
+      let totalTasks = 0
+      let completedTasks = 0
+      let pendingTasks = 0
+
+      // 如果有统计数据，直接使用
+      if (filteredData.stats) {
+        totalTasks = filteredData.stats.totalTasks || 0
+        completedTasks = filteredData.stats.completedTasks || 0
+        pendingTasks = filteredData.stats.pendingTasks || 0
+      } else {
+        // 如果没有统计数据，从任务列表中计算
+        const allTasks = filteredData.tasks || filteredData || []
+        if (Array.isArray(allTasks)) {
+          totalTasks = allTasks.length
+          completedTasks = allTasks.filter(
+            (task) => task.status === 'completed' || task.status === 'picked',
+          ).length
+          pendingTasks = allTasks.filter(
+            (task) => task.status === 'pending' || task.status === 'assigned',
+          ).length
+        }
+      }
+
+      // 更新统计数据
+      historyStats.totalTasks = totalTasks
+      historyStats.completedTasks = completedTasks
+      historyStats.pendingTasks = pendingTasks
+      historyStats.completionRate =
+        totalTasks > 0 ? Number(((completedTasks / totalTasks) * 100).toFixed(1)) : 0
 
       console.log('📊 更新後の統計データ:', historyStats)
 
@@ -709,11 +550,21 @@ async function fetchHistoryStats() {
       console.log('📊 強制更新完了')
     } else {
       console.warn('📊 履歴統計データが空です:', data)
+      // 重置统计数据
+      historyStats.totalTasks = 0
+      historyStats.completedTasks = 0
+      historyStats.pendingTasks = 0
+      historyStats.completionRate = 0
       ElMessage.warning('履歴統計データが取得できませんでした')
     }
   } catch (error) {
     console.error('履歴統計取得エラー:', error)
     ElMessage.error('履歴統計の取得に失敗しました')
+    // 重置统计数据
+    historyStats.totalTasks = 0
+    historyStats.completedTasks = 0
+    historyStats.pendingTasks = 0
+    historyStats.completionRate = 0
   } finally {
     loading.value.search = false
   }
@@ -722,12 +573,9 @@ async function fetchHistoryStats() {
 async function fetchPendingTasks() {
   loading.value.pendingTasks = true
   try {
-    const params = {
-      picker_id: filters.value.picker_id,
-    }
-
-    console.log('⏳ 未ピッキングリスト取得開始:', params)
-    const response = await getPendingTasks(params)
+    // 未ピッキングタスクは通常、日付範囲に依存しないため、パラメータなしで取得
+    console.log('⏳ 未ピッキングリスト取得開始:')
+    const response = await getPendingTasks({})
     console.log('⏳ 未ピッキングリスト取得結果:', response)
 
     // 处理响应数据并应用过滤
@@ -747,10 +595,14 @@ async function fetchPendingTasks() {
 async function fetchCompletedTasks() {
   loading.value.completedTasks = true
   try {
-    const params = {
+    const params: {
+      start_date?: string
+      end_date?: string
+      page?: number
+      limit?: number
+    } = {
       start_date: dateRange.value[0],
       end_date: dateRange.value[1],
-      picker_id: filters.value.picker_id,
       page: completedCurrentPage.value,
       limit: completedPageSize.value,
     }
@@ -796,33 +648,7 @@ async function fetchCompletedTasks() {
   }
 }
 
-async function fetchPerformanceData() {
-  loading.value.performance = true
-  try {
-    const params = {
-      start_date: performanceFilters.value.dateRange[0],
-      end_date: performanceFilters.value.dateRange[1],
-      picker_ids: performanceFilters.value.picker_ids,
-    }
-    console.log('🚀 担当者パフォーマンスデータ取得開始:', params)
-    const response = await getPerformanceByDestination(params)
-    console.log('🚀 担当者パフォーマンスデータ取得結果:', response)
-    const data = response?.data || response
-    performanceData.value = Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('担当者パフォーマンスデータ取得エラー:', error)
-    ElMessage.error('担当者パフォーマンスデータの取得に失敗しました')
-    performanceData.value = []
-  } finally {
-    loading.value.performance = false
-  }
-}
-
 function handleDateRangeChange() {
-  refreshData()
-}
-
-function handleFilterChange() {
   refreshData()
 }
 
@@ -830,12 +656,7 @@ async function refreshData() {
   console.log('🔄 データ更新開始')
   try {
     // 并行执行所有数据获取
-    await Promise.all([
-      fetchHistoryStats(),
-      fetchPendingTasks(),
-      fetchCompletedTasks(),
-      fetchPerformanceData(),
-    ])
+    await Promise.all([fetchHistoryStats(), fetchPendingTasks(), fetchCompletedTasks()])
     console.log('🔄 データ更新完了')
   } catch (error) {
     console.error('🔄 データ更新エラー:', error)
@@ -843,19 +664,9 @@ async function refreshData() {
   }
 }
 
-function refreshPerformanceData() {
-  fetchPerformanceData()
-}
-
 function resetFilters() {
-  filters.value = {
-    picker_id: '',
-    status: '',
-  }
-  dateRange.value = [
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    new Date().toISOString().slice(0, 10),
-  ]
+  filters.value = {}
+  dateRange.value = getCurrentMonthRange()
   refreshData()
 }
 
@@ -910,6 +721,7 @@ function getStatusText(status: string): string {
 function formatDateTime(dateTime?: string): string {
   if (!dateTime) return '-'
   return new Date(dateTime).toLocaleString('ja-JP', {
+    timeZone: 'Asia/Tokyo',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -924,32 +736,15 @@ function getCompletionColor(rate: number) {
   return '#f56c6c'
 }
 
-async function openDestinationPickerModal() {
-  destinationPickerVisible.value = true
-  loading.value.destinationPicker = true
-  try {
-    const [userRes, destRes] = await Promise.all([getUserOptions(), getDeliveryDestinations()])
-
-    userOptions.value = userRes.data || []
-    destinationPickerList.value = destRes.data || []
-  } catch (error) {
-    console.error('納入先担当データ取得エラー:', error)
-    ElMessage.error('データ取得に失敗しました')
-  } finally {
-    loading.value.destinationPicker = false
-  }
-}
-
-async function handlePickerChange(row: any) {
-  try {
-    await updateDestinationPicker(row.id, row.picker_id)
-    ElMessage.success(`[${row.destination_name}] の担当者を更新しました。`)
-  } catch (error) {
-    console.error(`担当者更新エラー:`, error)
-    ElMessage.error(`担当者の更新に失敗しました。`)
-    // 失败时可以考虑重新加载数据以恢复原状
-    // await openDestinationPickerModal();
-  }
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
 }
 
 // 生命周期
@@ -1126,53 +921,6 @@ onUnmounted(() => {
   background: #fafafa;
 }
 
-.performance-card {
-  border-radius: 12px;
-  border: none;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
-}
-
-.performance-filters {
-  padding: 10px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.destination-table-container {
-  padding: 16px;
-  background-color: #f8f9fa;
-}
-
-.destination-table-container h4 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: #303133;
-}
-
-.rank-badge {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  line-height: 24px;
-  text-align: center;
-  border-radius: 50%;
-  color: #fff;
-  font-weight: bold;
-}
-
-.rank-1 {
-  background-color: #ffd700;
-  color: #a26d00;
-}
-.rank-2 {
-  background-color: #c0c0c0;
-}
-.rank-3 {
-  background-color: #cd7f32;
-}
-
 .task-detail {
   margin-bottom: 20px;
 }
@@ -1301,10 +1049,6 @@ onUnmounted(() => {
   .filter-form .el-form-item {
     display: block;
     margin-bottom: 16px;
-  }
-
-  .performance-filters {
-    grid-template-columns: 1fr;
   }
 
   .chart-container {

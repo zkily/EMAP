@@ -27,14 +27,6 @@
             >
               報告
             </el-button>
-            <el-button
-              type="info"
-              :icon="Download"
-              @click="handleDownloadPDF"
-              :disabled="loading || !overviewData || overviewData.length === 0"
-            >
-              PDF下載
-            </el-button>
           </div>
         </div>
       </template>

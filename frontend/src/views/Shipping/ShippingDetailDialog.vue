@@ -70,7 +70,7 @@
             <span>{{ formatDate(shippingItems[0].shipping_date) }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="納入日" :span="1">
-            <span>{{ formatDate(shippingItems[0].delivery_date) }}</span>
+            <span>{{ formatDate(shippingItems[0].delivery_date || '') }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="納入先" :span="1">
             <span
@@ -261,8 +261,30 @@ const visible = ref(true)
 const loading = ref(false)
 const saveLoading = ref(false)
 const batchEditMode = ref(false)
-const shippingItems = ref([])
-const originalShippingItems = ref([])
+// 定义接口
+interface ShippingItem {
+  id: number
+  shipping_no: string
+  shipping_date: string
+  delivery_date: string | null
+  destination_cd: string
+  destination_name: string
+  product_cd: string
+  product_name: string
+  product_alias: string | null
+  box_type: string | null
+  confirmed_boxes: number
+  confirmed_units: number
+  unit: string
+  status: string
+  remarks: string | null
+  created_at: string
+  updated_at: string
+  [key: string]: any
+}
+
+const shippingItems = ref<ShippingItem[]>([])
+const originalShippingItems = ref<ShippingItem[]>([])
 const editingShippingNo = ref(false)
 const editableShippingNoSuffix = ref(1)
 const originalShippingNo = ref('')
@@ -308,7 +330,7 @@ function statusColor(status: string): 'info' | 'success' | 'warning' | 'danger' 
   }
 }
 
-function getBoxTypeTagType(boxType: string): string {
+function getBoxTypeTagType(boxType: string): 'success' | 'primary' | 'warning' | 'danger' | 'info' {
   switch (boxType) {
     case '小箱':
       return 'success'
@@ -323,7 +345,7 @@ function getBoxTypeTagType(boxType: string): string {
   }
 }
 
-function getRowClassName({ row, rowIndex }) {
+function getRowClassName({ row, rowIndex }: { row: ShippingItem; rowIndex: number }) {
   return batchEditMode.value ? 'editable-row' : ''
 }
 
@@ -457,7 +479,7 @@ async function saveBatchEdit() {
 
     batchEditMode.value = false
     emit('refresh')
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('一括保存エラー:', error)
       ElMessage.error('一括保存に失敗しました: ' + (error.response?.data?.message || error.message))
@@ -584,7 +606,7 @@ async function saveShippingNoChange() {
     // 重新获取数据
     await fetchShippingDetails(newShippingNo)
     emit('refresh')
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('出荷番号更新エラー:', error)
       ElMessage.error(

@@ -556,9 +556,12 @@ class PickingService {
           THEN MAX(pt.complete_time)
           ELSE DATE_ADD(MIN(pt.start_time), INTERVAL (COUNT(*) * 5) MINUTE)
         END as estimated_completion
-      FROM picking_tasks pt
+            FROM picking_tasks pt
       LEFT JOIN users u ON pt.picker_id = u.username
-      WHERE 1=1
+      WHERE DATE(pt.shipping_date) = CURDATE()
+        AND pt.product_name NOT LIKE '%加工%'
+        AND pt.product_name NOT LIKE '%アーチ%'
+        AND pt.product_name NOT LIKE '%料金%'
     `;
 
     const queryParams = [];
@@ -767,7 +770,7 @@ class PickingService {
   async getProgressData(params) {
     const { picker_id } = params;
 
-    // 获取当天的统计数据
+    // 获取当天的统计数据（只显示当天，排除包含特定关键词的产品）
     const todayStatsQuery = `
       SELECT
         COUNT(*) as total_picking,
@@ -777,14 +780,17 @@ class PickingService {
         SUM(pt.picked_quantity) as total_picked,
         SUM(pt.confirmed_boxes) as total_required
       FROM picking_tasks pt
-      WHERE DATE(pt.created_at) = CURDATE()
+      WHERE DATE(pt.shipping_date) = CURDATE()
+        AND pt.product_name NOT LIKE '%加工%'
+        AND pt.product_name NOT LIKE '%アーチ%'
+        AND pt.product_name NOT LIKE '%料金%'
       ${picker_id ? "AND pt.picker_id = ?" : ""}
     `;
 
     const queryParams = picker_id ? [picker_id] : [];
     const todayStats = await dbQuery(todayStatsQuery, queryParams);
 
-    // 获取当天的托盘进度数据
+    // 获取当天的托盘进度数据（只显示当天，排除包含特定关键词的产品）
     const palletProgressQuery = `
       SELECT
         pt.shipping_no,
@@ -807,8 +813,11 @@ class PickingService {
         END as estimated_completion
       FROM picking_tasks pt
       LEFT JOIN users u ON pt.picker_id = u.username
-      WHERE DATE(pt.created_at) = CURDATE()
+      WHERE DATE(pt.shipping_date) = CURDATE()
       AND pt.status IN ('pending', 'picking', 'completed', 'shortage')
+      AND pt.product_name NOT LIKE '%加工%'
+      AND pt.product_name NOT LIKE '%アーチ%'
+      AND pt.product_name NOT LIKE '%料金%'
       ${picker_id ? "AND pt.picker_id = ?" : ""}
       GROUP BY pt.shipping_no, u.name
       ORDER BY pallet_status DESC, start_time ASC
@@ -850,7 +859,7 @@ class PickingService {
     console.log("getNewProgressData called with params:", params);
 
     try {
-      // 1. 获取パレット別進捗一覧数据
+      // 1. 获取パレット別進捗一覧数据（只显示当天，排除包含特定关键词的产品）
       const palletListQuery = `
         SELECT
           pt.shipping_no_p,
@@ -862,12 +871,16 @@ class PickingService {
           pt.picker_id
         FROM picking_tasks pt
         LEFT JOIN users u ON pt.picker_id = u.username
-        ORDER BY pt.shipping_date DESC, pt.shipping_no_p
+        WHERE DATE(pt.shipping_date) = CURDATE()
+          AND pt.product_name NOT LIKE '%加工%'
+          AND pt.product_name NOT LIKE '%アーチ%'
+          AND pt.product_name NOT LIKE '%料金%'
+        ORDER BY pt.shipping_no_p
       `;
 
       const palletList = await dbQuery(palletListQuery);
 
-      // 2. 获取ピッキング進捗状況 - 按shipping_date分组的统计
+      // 2. 获取ピッキング進捗状況 - 按shipping_date分组的统计（排除包含特定关键词的产品）
       const progressStatsQuery = `
         SELECT
           pt.shipping_date,
@@ -879,13 +892,16 @@ class PickingService {
           ) as completion_rate
         FROM picking_tasks pt
         WHERE pt.shipping_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+          AND pt.product_name NOT LIKE '%加工%'
+          AND pt.product_name NOT LIKE '%アーチ%'
+          AND pt.product_name NOT LIKE '%料金%'
         GROUP BY pt.shipping_date
         ORDER BY pt.shipping_date
       `;
 
       const progressStats = await dbQuery(progressStatsQuery);
 
-      // 3. 获取当日总览数据
+      // 3. 获取当日总览数据（排除包含特定关键词的产品）
       const todayOverviewQuery = `
         SELECT
           COUNT(*) as total_today,
@@ -896,6 +912,9 @@ class PickingService {
           ) as today_completion_rate
         FROM picking_tasks pt
         WHERE DATE(pt.shipping_date) = CURDATE()
+          AND pt.product_name NOT LIKE '%加工%'
+          AND pt.product_name NOT LIKE '%アーチ%'
+          AND pt.product_name NOT LIKE '%料金%'
       `;
 
       let todayOverview = (await dbQuery(todayOverviewQuery))[0];
@@ -942,15 +961,35 @@ class PickingService {
     const mockProgressStats = [];
     const today = new Date();
 
-    // 生成 palletList 数据
+    // 生成 palletList 数据（只生成当天数据，排除包含特定关键词的产品名）
+    const excludeKeywords = ["加工", "アーチ", "料金"];
+    const productNames = [
+      "製品 ABC",
+      "製品 DEF",
+      "製品 GHI",
+      "製品 JKL",
+      "商品 XYZ",
+      "部品 QRS",
+      "材料 TUV",
+      "機器 WXY",
+    ];
+
     for (let i = 0; i < 15; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + Math.floor(Math.random() * 5) - 2);
+      // 只生成当天的数据
       const status = Math.random() > 0.5 ? "completed" : "pending";
+      const productName = `${productNames[i % productNames.length]}-${i + 1}`;
+
+      // 确保产品名不包含排除的关键词
+      let validProductName = productName;
+      while (excludeKeywords.some((keyword) => validProductName.includes(keyword))) {
+        const randomIndex = Math.floor(Math.random() * productNames.length);
+        validProductName = `${productNames[randomIndex]}-${i + 1}`;
+      }
+
       mockPalletList.push({
         shipping_no_p: `P240725-00${i + 1}`,
-        shipping_date: date.toISOString().split("T")[0],
-        product_name: `製品 ABC-${i + 1}`,
+        shipping_date: today.toISOString().split("T")[0], // 只使用当天日期
+        product_name: validProductName,
         destination_name: `納入先 XYZ-${i % 3}`,
         status: status,
         picker_name: status === "completed" ? "作業者A" : null,

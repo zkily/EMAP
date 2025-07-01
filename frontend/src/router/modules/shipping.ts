@@ -34,7 +34,7 @@ const shipping: RouteRecordRaw = {
       name: 'ShippingList',
       component: () => import('@/views/Shipping/ShippingList.vue'),
       meta: {
-        title: '出荷一覧',
+        title: '出荷構成一覧',
         group: '出荷管理',
         icon: ClipboardList,
         permission: 'shipping:view',

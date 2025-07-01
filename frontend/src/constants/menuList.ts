@@ -616,7 +616,7 @@ export const shippingMenu: MenuItem = {
   roles: ['admin', 'manager', 'staff'],
   children: [
     {
-      title: '出荷一覧',
+      title: '出荷構成一覧',
       path: '/shipping/list',
       icon: ClipboardList,
       roles: ['admin', 'manager', 'staff'],

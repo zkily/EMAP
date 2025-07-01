@@ -93,7 +93,7 @@
               <span class="stat-number">{{ todayOverview.pending_today }}</span>
               <div class="stat-badge pending">進行中</div>
             </div>
-            <span class="stat-label">作業中</span>
+            <span class="stat-label">今日作業中</span>
             <div class="stat-progress">
               <div
                 class="progress-bar progress-bar-orange"
@@ -122,7 +122,7 @@
                 <!-- <span>+8%</span> -->
               </div>
             </div>
-            <span class="stat-label">完了</span>
+            <span class="stat-label">今日完了</span>
             <div class="stat-progress">
               <div
                 class="progress-bar progress-bar-green"
@@ -148,7 +148,7 @@
               <span class="stat-number">{{ todayOverview.today_completion_rate }}</span>
               <span class="stat-percent">%</span>
             </div>
-            <span class="stat-label">完了率</span>
+            <span class="stat-label">今日完了率</span>
             <div class="circular-progress">
               <svg class="progress-ring" width="60" height="60">
                 <circle
@@ -401,8 +401,42 @@ const fetchProgressData = async () => {
           })
         }
 
-        // todayOverview 不需要过滤，但确保数值有效
-        if (filtered.todayOverview && typeof filtered.todayOverview === 'object') {
+        // 重新计算 todayOverview 统计数据，排除特定关键词的产品，只显示当天数据
+        if (filtered.palletList && Array.isArray(filtered.palletList)) {
+          // 获取当天日期字符串
+          const today = new Date().toISOString().split('T')[0]
+
+          // 过滤只显示当天的数据
+          const todayItems = filtered.palletList.filter((item: any) => {
+            const itemDate = item.shipping_date || item.date || ''
+            return itemDate === today || itemDate.startsWith(today)
+          })
+
+          const totalToday = todayItems.length
+          const pendingToday = todayItems.filter(
+            (item: any) =>
+              item.status === 'pending' ||
+              item.status === '進行中' ||
+              item.status === 'in_progress',
+          ).length
+          const completedToday = todayItems.filter(
+            (item: any) =>
+              item.status === 'completed' || item.status === '完了' || item.status === 'finished',
+          ).length
+          const completionRate =
+            totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
+
+          filtered.todayOverview = {
+            total_today: totalToday,
+            pending_today: pendingToday,
+            completed_today: completedToday,
+            today_completion_rate: completionRate,
+          }
+
+          // 更新 palletList 也只显示当天数据
+          filtered.palletList = todayItems
+        } else if (filtered.todayOverview && typeof filtered.todayOverview === 'object') {
+          // 如果没有 palletList 数据，保持原有逻辑但确保数值有效
           const overview = filtered.todayOverview
           filtered.todayOverview = {
             total_today: overview.total_today || 0,

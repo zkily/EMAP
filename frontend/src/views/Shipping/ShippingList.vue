@@ -1765,6 +1765,7 @@ function generatePrintHTML(items: ShippingItem[]): string {
         @page {
           size: A4;
           margin: 10mm;
+          margin-top: 2cm;
         }
         body {
           font-family: '游ゴシック','Arial', 'Hiragino Sans', 'Meiryo', sans-serif;
@@ -1772,16 +1773,20 @@ function generatePrintHTML(items: ShippingItem[]): string {
           padding: 0;
           background-color: white;
           color: black;
-          margin-top: 30px;
         }
         .page {
           page-break-after: always;
           page-break-inside: avoid;
           padding: 20px;
           position: relative;
-          height: 257mm; /* A4サイズから余白を引いた高さ */
+          min-height: 257mm; /* A4サイズから余白を引いた高さ */
           display: flex;
           flex-direction: column;
+          margin-top: 0;
+          box-sizing: border-box;
+        }
+        .page:first-child {
+          margin-top: 0;
         }
 
         /* 上部スタイル */
@@ -1967,12 +1972,22 @@ function generatePrintHTML(items: ShippingItem[]): string {
           color: white;
         }
         @media print {
-          body { padding: 0; }
-          .no-print { display: none; }
+          body {
+            padding: 0;
+            margin: 0;
+          }
+          .no-print {
+            display: none;
+          }
           .page {
             page-break-after: always;
-            page-break-before: always;
+            page-break-before: auto;
             page-break-inside: avoid;
+            margin-top: 0 !important;
+            padding-top: 20px !important;
+          }
+          .page:first-child {
+            page-break-before: avoid;
           }
         }
       </style>

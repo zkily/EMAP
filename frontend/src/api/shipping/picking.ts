@@ -139,9 +139,9 @@ export const getCompletedTasks = (params: {
   })
 }
 
-// 获取担当者选项列表
+// 获取担当者选项列表 - 从picking_tasks表中获取
 export const getPickerOptions = () => {
-  return request.get('/api/master/options/pickers')
+  return request.get('/api/shipping/picking/pickers')
 }
 
 /**

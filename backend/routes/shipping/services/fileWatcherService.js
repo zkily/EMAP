@@ -79,8 +79,8 @@ const processCsvFile = async (filePath) => {
 
           // 添加调试信息
           if (data.date || data.datetime) {
-            console.log(`原始数据 - 日期: "${data.date}", 时间: "${data.datetime}"`);
-            console.log(`格式化后 - 日期: "${formattedDate}", 时间: "${formattedDateTime}"`);
+            // console.log(`原始数据 - 日期: "${data.date}", 时间: "${data.datetime}"`);
+            // console.log(`格式化后 - 日期: "${formattedDate}", 时间: "${formattedDateTime}"`);
           }
 
           // 只添加有效记录（至少有picking_no或product_code）
@@ -123,7 +123,7 @@ const deduplicateRecords = (records) => {
       seenKeys.add(uniqueKey);
       uniqueRecords.push(record);
     } else {
-      console.log(`跳过重复记录: ${uniqueKey}`);
+      // console.log(`跳过重复记录: ${uniqueKey}`);
     }
   }
 
@@ -190,7 +190,7 @@ const batchCheckExistingRecords = async (records) => {
       const key = `${record.picking_no}_${record.product_code}_${record.date}`;
       if (existingSet.has(key)) {
         existingRecords.push(record);
-        console.log(`跳过数据库中已存在的记录: ${key}`);
+        // console.log(`跳过数据库中已存在的记录: ${key}`);
       } else {
         newRecords.push(record);
       }

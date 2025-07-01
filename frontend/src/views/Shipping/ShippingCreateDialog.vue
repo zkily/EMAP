@@ -1349,8 +1349,8 @@ const settings = ref({
   optimizationMethod: 'heuristic', // 默认使用启发式算法
 })
 
-// 不同箱种的托盘设置
-const boxSettings = ref({
+// 不同箱种的托盘设置 - 从页面的パレット容量設定获取
+const getDefaultBoxSettings = () => ({
   小箱: 32,
   大箱: 18,
   TP箱: 20,
@@ -1358,6 +1358,31 @@ const boxSettings = ref({
   加工箱: 18,
   default: 40, // 默认值
 })
+
+// 从localStorage加载保存的设置，如果没有则使用默认值
+const loadBoxSettings = () => {
+  try {
+    const saved = localStorage.getItem('shipping-box-settings')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return { ...getDefaultBoxSettings(), ...parsed }
+    }
+  } catch (error) {
+    console.warn('加载パレット容量設定失败:', error)
+  }
+  return getDefaultBoxSettings()
+}
+
+const boxSettings = ref(loadBoxSettings())
+
+// 保存设置到localStorage
+const saveBoxSettings = () => {
+  try {
+    localStorage.setItem('shipping-box-settings', JSON.stringify(boxSettings.value))
+  } catch (error) {
+    console.warn('保存パレット容量設定失败:', error)
+  }
+}
 
 // 优化算法选项
 const optimizationOptions = [
@@ -1485,6 +1510,15 @@ watch(
     } else {
       pallets.value = []
     }
+  },
+  { deep: true },
+)
+
+// 监听パレット容量設定的变化并保存
+watch(
+  () => boxSettings.value,
+  () => {
+    saveBoxSettings()
   },
   { deep: true },
 )
@@ -2455,6 +2489,9 @@ function itemBoxesChanged(item) {
 
 // 重新计算托盘分配
 function recalculatePallets() {
+  // 保存当前的パレット容量設定
+  saveBoxSettings()
+
   // console.log('重新计算托盘分配开始', selectedItems.value)
   if (selectedItems.value.length === 0) {
     // console.log('没有选择的项目，不进行托盘分配')
@@ -3554,7 +3591,7 @@ async function submitShipping() {
         product_cd: item.product_cd,
         destination_cd: item.destination_cd,
         shipping_date: item.shipping_date,
-        shipping_no: productPalletMap.get(item.product_cd) || null,
+        shipping_no: (productPalletMap.get(item.product_cd) || '') + '_' + item.product_cd,
       }))
       .filter((item) => item.shipping_no)
 

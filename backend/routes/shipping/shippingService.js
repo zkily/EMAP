@@ -116,7 +116,7 @@ export async function getShippingItems(req, res) {
 
     const query = `
       SELECT
-        id, shipping_no, product_cd, product_name, product_alias,
+        id, shipping_no, shipping_no_p, product_cd, product_name, product_alias,
         destination_cd, destination_name, shipping_date, delivery_date, box_type,
         status, confirmed_boxes, confirmed_units, unit, remarks,
         created_at, updated_at
@@ -193,6 +193,7 @@ export async function bulkInsertShippingItems(req, res) {
       for (const item of items) {
         const {
           shipping_no,
+          shipping_no_p,
           product_cd,
           product_name,
           product_alias,
@@ -207,16 +208,18 @@ export async function bulkInsertShippingItems(req, res) {
           remarks,
         } = item;
 
+        // 插入shipping_items表
         await db.query(
           `
       INSERT INTO shipping_items (
-            shipping_no, product_cd, product_name, product_alias,
+            shipping_no, shipping_no_p, product_cd, product_name, product_alias,
             destination_cd, destination_name, shipping_date, delivery_date, box_type,
             confirmed_boxes, confirmed_units, unit, remarks
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
           [
             shipping_no,
+            shipping_no_p || null,
             product_cd,
             product_name,
             product_alias || null,
@@ -231,6 +234,14 @@ export async function bulkInsertShippingItems(req, res) {
             remarks || null,
           ],
         );
+
+        // 如果有shipping_no_p，则更新order_daily表的shipping_no字段
+        if (shipping_no_p) {
+          await db.query(`UPDATE order_daily SET shipping_no = ? WHERE shipping_no = ?`, [
+            shipping_no_p,
+            shipping_no,
+          ]);
+        }
       }
 
       // トランザクションのコミット (提交事务)
@@ -845,9 +856,9 @@ export async function cancelShipping(req, res) {
 
     await connection.beginTransaction();
 
-    // レコードが存在するか確認 (检查记录是否存在)
+    // レコードが存在するか確認し、shipping_no_pを取得 (检查记录是否存在并获取shipping_no_p)
     const [checkRows] = await connection.query(
-      `SELECT * FROM shipping_items WHERE shipping_no = ?`,
+      `SELECT shipping_no_p FROM shipping_items WHERE shipping_no = ?`,
       [shipping_no],
     );
 
@@ -855,6 +866,11 @@ export async function cancelShipping(req, res) {
       await connection.rollback();
       return res.status(404).json(standardResponse(false, "出荷データが見つかりません"));
     }
+
+    // shipping_no_pの値を収集（NULLでないもののみ）
+    const shippingNoPValues = checkRows
+      .map((row) => row.shipping_no_p)
+      .filter((value) => value !== null && value !== undefined);
 
     // 1. まず、picking_tasksテーブルから関連データを削除（shipping_no で照合）
     const [pickingTasksDeleteResult] = await connection.query(
@@ -872,11 +888,15 @@ export async function cancelShipping(req, res) {
 
     console.log(`${pickingListDeleteResult.affectedRows}件のpicking_listレコードを削除しました`);
 
-    // 3. order_dailyテーブルの出荷番号をクリア
-    const [orderResult] = await connection.query(
-      `UPDATE order_daily SET shipping_no = NULL WHERE shipping_no = ?`,
-      [shipping_no],
-    );
+    // 3. order_dailyテーブルの出荷番号をクリア（shipping_no_pの値を使用）
+    let orderResult = { affectedRows: 0 };
+    if (shippingNoPValues.length > 0) {
+      const placeholders = shippingNoPValues.map(() => "?").join(",");
+      [orderResult] = await connection.query(
+        `UPDATE order_daily SET shipping_no = NULL WHERE shipping_no IN (${placeholders})`,
+        shippingNoPValues,
+      );
+    }
 
     console.log(`${orderResult.affectedRows}件のorder_dailyレコードの出荷番号をクリアしました`);
 

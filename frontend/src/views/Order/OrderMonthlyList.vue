@@ -2367,7 +2367,7 @@ const openMainDestinationDialog = () => {
   position: relative;
   width: 80px;
   height: 80px;
-  margin: 0 auto 20px;
+  margin: 0 auto 5px;
 }
 
 .spinner-ring {
@@ -2490,11 +2490,11 @@ const openMainDestinationDialog = () => {
 .page-header {
   position: relative;
   z-index: 1;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(20px);
   border-radius: 16px;
-  padding: 20px;
+  padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
@@ -2514,7 +2514,7 @@ const openMainDestinationDialog = () => {
   display: flex;
   align-items: center;
   gap: 15px;
-  margin: 0 0 10px 0;
+  margin: 0 0 px 0;
   color: white;
   font-size: 32px;
   font-weight: 700;
@@ -2662,7 +2662,7 @@ const openMainDestinationDialog = () => {
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .modern-card:hover {
@@ -2675,7 +2675,7 @@ const openMainDestinationDialog = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 15px;
-  margin-bottom: 20px;
+  /* margin-bottom: 10px; */
   position: relative;
   z-index: 1;
 }
@@ -2690,7 +2690,7 @@ const openMainDestinationDialog = () => {
 .card-content {
   display: flex;
   align-items: center;
-  padding: 25px;
+  padding: 1px;
   position: relative;
   z-index: 2;
 }
@@ -2819,7 +2819,7 @@ const openMainDestinationDialog = () => {
 
 /* 操作按钮区域 */
 .action-card {
-  padding: 20px;
+  padding: 1px;
 }
 
 .action-header {
@@ -2957,17 +2957,17 @@ const openMainDestinationDialog = () => {
 }
 
 .filter-card.no-header :deep(.el-card__body) {
-  padding: 20px;
+  padding: 1px;
 }
 
 .filter-header-inline {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
   border-bottom: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .filter-header {
-  padding: 15px 20px;
+  padding: 5px 5px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -3028,7 +3028,7 @@ const openMainDestinationDialog = () => {
 }
 
 .nav-form-item {
-  margin-top: 22px; /* 对齐导航按钮到其他输入框底部 */
+  margin-top: 5px; /* 对齐导航按钮到其他输入框底部 */
 }
 
 .modern-select,
@@ -4858,7 +4858,7 @@ const openMainDestinationDialog = () => {
 .enhanced-filter :deep(.el-card__header) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px 16px 0 0;
-  padding: 20px 24px;
+  padding: 10px 24px;
   border-bottom: none;
 }
 
@@ -4890,13 +4890,13 @@ const openMainDestinationDialog = () => {
   font-size: 14px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.1);
-  padding: 6px 12px;
+  padding: 1px 12px;
   border-radius: 16px;
   backdrop-filter: blur(10px);
 }
 
 .filter-content {
-  padding: 24px;
+  padding: 1px;
 }
 
 .filter-bar.enhanced {
@@ -4904,7 +4904,7 @@ const openMainDestinationDialog = () => {
 }
 
 .filter-section {
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   padding: 20px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 12px;

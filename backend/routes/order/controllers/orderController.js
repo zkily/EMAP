@@ -150,9 +150,9 @@ export const generateDailyOrders = async (req, res) => {
       }
 
       const lastConfirmed = lastConfirmedOrders[0];
-      console.log(
-        `🔥 订单 ${order.order_id} 最后确认日期: ${lastConfirmed.year}-${lastConfirmed.month}-${lastConfirmed.day}`,
-      );
+      // console.log(
+      //   `🔥 订单 ${order.order_id} 最后确认日期: ${lastConfirmed.year}-${lastConfirmed.month}-${lastConfirmed.day}`,
+      // );
 
       // 2. 更新该日期之前的所有记录，将forecast_units设为confirmed_units
       const updateSql = `
@@ -176,9 +176,9 @@ export const generateDailyOrders = async (req, res) => {
         lastConfirmed.day,
       ]);
 
-      console.log(
-        `🔥 更新订单 ${order.order_id} 的历史预测值: ${updateResult.affectedRows} 条记录已更新`,
-      );
+      // console.log(
+      //   `🔥 更新订单 ${order.order_id} 的历史预测值: ${updateResult.affectedRows} 条记录已更新`,
+      // );
 
       await insertLog(
         connection,
