@@ -15,6 +15,7 @@ import {
   BarChart3,
   Clock,
   Users,
+  Plus,
 } from 'lucide-vue-next'
 
 const shipping: RouteRecordRaw = {
@@ -46,9 +47,33 @@ const shipping: RouteRecordRaw = {
       name: 'ShippingOverview',
       component: () => import('@/views/Shipping/ShippingOverview.vue'),
       meta: {
-        title: '出荷一覧表',
+        title: '出荷予定表',
         group: '出荷管理',
         icon: FileText,
+        permission: 'shipping:view',
+        roles: ['admin', 'manager', 'staff'],
+      },
+    },
+    {
+      path: 'report',
+      name: 'ShippingReportPage',
+      component: () => import('@/views/Shipping/ShippingReportPage.vue'),
+      meta: {
+        title: '出荷報告書',
+        group: '出荷管理',
+        icon: History,
+        permission: 'shipping:view',
+        roles: ['admin', 'manager', 'staff'],
+      },
+    },
+    {
+      path: 'welding',
+      name: 'WeldingShippingManager',
+      component: () => import('@/views/Shipping/WeldingShippingManager.vue'),
+      meta: {
+        title: '溶接出荷管理',
+        group: '出荷管理',
+        icon: Truck,
         permission: 'shipping:view',
         roles: ['admin', 'manager', 'staff'],
       },

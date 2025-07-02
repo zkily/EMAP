@@ -42,8 +42,11 @@ export default {
     },
     shipping: {
       root: '出货管理',
+      create: '出货编号创建',
       list: '出货清单',
       overview: '出货一览表',
+      report: '出货报告书',
+      welding: '焊接出货管理',
       dashboard: '出货仪表盘',
       kpi: '出货KPI',
       picking: {

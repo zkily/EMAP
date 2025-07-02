@@ -87,6 +87,10 @@
           <el-icon><Refresh /></el-icon>
           デフォルトに戻す
         </el-button>
+        <el-button type="warning" @click="autoAssignByIssueType" :loading="autoAssignLoading">
+          <el-icon><Star /></el-icon>
+          一键分配（按発行区分）
+        </el-button>
         <el-button type="primary" @click="saveGroups">
           <el-icon><Check /></el-icon>
           保存
@@ -109,7 +113,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Collection, Box, Plus, Refresh, Check } from '@element-plus/icons-vue'
+import { Collection, Box, Plus, Refresh, Check, Star } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 // Props
@@ -117,6 +121,10 @@ const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false,
+  },
+  storageKey: {
+    type: String,
+    default: 'destination_groups',
   },
 })
 
@@ -126,7 +134,9 @@ const emit = defineEmits(['update:modelValue', 'groupsUpdated'])
 // 响应式数据
 const visible = ref(props.modelValue)
 const loading = ref(false)
+const autoAssignLoading = ref(false)
 const allDestinations = ref([])
+const allDestinationsWithIssueType = ref([])
 
 // 3个池子的数据
 const pools = reactive([{ destinations: [] }, { destinations: [] }, { destinations: [] }])
@@ -150,6 +160,7 @@ watch(
     visible.value = newVal
     if (newVal) {
       loadDestinations()
+      loadDestinationsWithIssueType()
       loadSavedGroups()
     }
   },
@@ -162,6 +173,7 @@ watch(visible, (newVal) => {
 // 生命周期
 onMounted(() => {
   loadDestinations()
+  loadDestinationsWithIssueType()
   loadSavedGroups()
 })
 
@@ -201,10 +213,113 @@ async function loadDestinations() {
   }
 }
 
+// 加载带有issue_type的纳入先数据
+async function loadDestinationsWithIssueType() {
+  try {
+    const response = await request.get('/api/master/options/destination-options-with-issue-type')
+
+    // 处理不同的响应格式
+    let data = null
+    if (response && response.success === true && Array.isArray(response.data)) {
+      data = response.data
+    } else if (Array.isArray(response)) {
+      data = response
+    } else if (response && Array.isArray(response.data)) {
+      data = response.data
+    }
+
+    if (data && Array.isArray(data)) {
+      allDestinationsWithIssueType.value = data.map((item) => ({
+        value: item.cd,
+        label: `${item.cd} - ${item.name}`,
+        issue_type: item.issue_type,
+      }))
+      console.log('加载带有issue_type的纳入先数据:', allDestinationsWithIssueType.value)
+    } else {
+      console.error('納入先（issue_type）データ格式不正确:', response)
+    }
+  } catch (error) {
+    console.error('获取带有issue_type的纳入先失败:', error)
+  }
+}
+
+// 按issue_type自动分配
+async function autoAssignByIssueType() {
+  try {
+    autoAssignLoading.value = true
+
+    // 首先清空所有池子
+    pools.forEach((pool) => {
+      pool.destinations = []
+    })
+
+    // 按issue_type分组
+    const groupsByIssueType = {}
+    allDestinationsWithIssueType.value.forEach((dest) => {
+      // 将issue_type转换为数字，处理多种可能的格式
+      let issueTypeNum = 1 // 默认分配到组1
+
+      if (dest.issue_type) {
+        // 如果是字符串，尝试解析数字
+        if (typeof dest.issue_type === 'string') {
+          const parsed = parseInt(dest.issue_type.trim())
+          if (!isNaN(parsed) && parsed >= 1 && parsed <= 3) {
+            issueTypeNum = parsed
+          }
+          // 处理日文字符串值
+          else if (dest.issue_type === '自動') {
+            issueTypeNum = 1
+          } else if (dest.issue_type === '手動') {
+            issueTypeNum = 2
+          }
+        }
+        // 如果是数字
+        else if (typeof dest.issue_type === 'number') {
+          if (dest.issue_type >= 1 && dest.issue_type <= 3) {
+            issueTypeNum = dest.issue_type
+          }
+        }
+      }
+
+      if (!groupsByIssueType[issueTypeNum]) {
+        groupsByIssueType[issueTypeNum] = []
+      }
+      groupsByIssueType[issueTypeNum].push(dest)
+    })
+
+    // 分配到对应的池子（issue_type 1->グループ1, 2->グループ2, 3->グループ3）
+    Object.keys(groupsByIssueType).forEach((issueType) => {
+      const poolIndex = parseInt(issueType) - 1 // 转换为池子索引（0,1,2）
+      if (poolIndex >= 0 && poolIndex < pools.length) {
+        pools[poolIndex].destinations = groupsByIssueType[issueType]
+      }
+    })
+
+    const totalAssigned = Object.values(groupsByIssueType).reduce(
+      (sum, group) => sum + group.length,
+      0,
+    )
+
+    // 显示分配详情
+    const assignmentDetails = Object.keys(groupsByIssueType)
+      .map((issueType) => `グループ${issueType}: ${groupsByIssueType[issueType].length}件`)
+      .join(', ')
+
+    ElMessage.success(
+      `発行区分に基づいて${totalAssigned}件の納入先を自動分配しました (${assignmentDetails})`,
+    )
+  } catch (error) {
+    console.error('自动分配失败:', error)
+    ElMessage.error('自動分配に失敗しました')
+  } finally {
+    autoAssignLoading.value = false
+  }
+}
+
 // 加载已保存的分组
 function loadSavedGroups() {
   try {
-    const savedGroups = localStorage.getItem('destination_groups')
+    const savedGroups = localStorage.getItem(props.storageKey)
     if (savedGroups) {
       const groups = JSON.parse(savedGroups)
       groups.forEach((group, index) => {
@@ -224,7 +339,7 @@ function saveGroups() {
     const groupsData = pools.map((pool) => ({
       destinations: pool.destinations,
     }))
-    localStorage.setItem('destination_groups', JSON.stringify(groupsData))
+    localStorage.setItem(props.storageKey, JSON.stringify(groupsData))
     ElMessage.success('グループが保存されました')
 
     // 通知父组件分组已更新
@@ -461,6 +576,18 @@ defineExpose({
   gap: 12px;
   padding: 20px 0;
   border-top: 1px solid #e4e7ed;
+}
+
+.actions-section .el-button {
+  padding: 12px 20px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.actions-section .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 对话框底部 */

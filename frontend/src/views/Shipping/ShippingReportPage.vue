@@ -1,6 +1,6 @@
 <template>
-  <div class="shipping-overview">
-    <el-card shadow="never" class="overview-card">
+  <div class="shipping-report-page">
+    <el-card shadow="never" class="report-card">
       <!-- 页面标题 -->
       <template #header>
         <div class="card-header">
@@ -8,16 +8,16 @@
             <el-icon class="header-icon">
               <Document />
             </el-icon>
-            <span class="header-title">出荷一覧表</span>
+            <span class="header-title">出荷報告書</span>
           </div>
           <div class="header-actions">
             <el-button
-              type="primary"
-              :icon="Printer"
-              @click="handlePrint"
+              type="success"
+              :icon="Document"
+              @click="handleReport"
               :disabled="loading || !overviewData || overviewData.length === 0"
             >
-              印刷
+              報告書印刷
             </el-button>
           </div>
         </div>
@@ -173,33 +173,33 @@
       </div>
     </el-card>
 
-    <!-- 打印对话框 -->
+    <!-- 报告对话框 -->
     <el-dialog
-      v-model="printDialogVisible"
+      v-model="reportDialogVisible"
       width="90%"
       :close-on-click-modal="false"
-      class="print-dialog"
+      class="report-dialog"
     >
       <template #header>
         <div class="dialog-header-container">
-          <span class="el-dialog__title">印刷プレビュー</span>
+          <span class="el-dialog__title">報告書プレビュー</span>
           <div class="dialog-header-actions">
-            <el-button @click="printDialogVisible = false">キャンセル</el-button>
-            <el-button type="primary" @click="executeFrontendPrint(printContent)"
+            <el-button @click="reportDialogVisible = false">キャンセル</el-button>
+            <el-button type="primary" @click="executeFrontendPrint(reportContent)"
               >印刷実行</el-button
             >
           </div>
         </div>
       </template>
-      <div ref="printContent" class="print-content">
-        <ShippingOverviewPrint :data="overviewData" :filters="filters" />
+      <div ref="reportContent" class="report-content">
+        <ShippingReport :data="overviewData" :filters="filters" />
       </div>
     </el-dialog>
 
     <!-- 分组管理弹窗 -->
     <DestinationGroupManager
       v-model="showGroupManager"
-      storage-key="destination_groups_overview"
+      storage-key="destination_groups_report"
       @groups-updated="handleGroupsUpdated"
     />
   </div>
@@ -208,25 +208,15 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import {
-  Document,
-  Search,
-  Refresh,
-  Printer,
-  Location,
-  Box,
-  Setting,
-  Download,
-} from '@element-plus/icons-vue'
+import { Document, Search, Refresh, Location, Setting } from '@element-plus/icons-vue'
 import request from '@/utils/request'
-import { downloadShippingOverviewPDF } from '@/api/shipping/printing'
-import ShippingOverviewPrint from './components/ShippingOverviewPrint.vue'
+import ShippingReport from './components/ShippingReport.vue'
 import DestinationGroupManager from './components/DestinationGroupManager.vue'
 
 // 响应式数据
 const loading = ref(false)
-const printDialogVisible = ref(false)
-const printContent = ref(null)
+const reportDialogVisible = ref(false)
+const reportContent = ref(null)
 const showGroupManager = ref(false)
 
 // 筛选条件
@@ -263,13 +253,6 @@ const totalBoxes = computed(() => {
   return overviewData.value.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0)
 })
 
-const statsData = computed(() => ({
-  totalDestinations: totalDestinations.value,
-  totalDates: totalDates.value,
-  totalProducts: totalProducts.value,
-  totalBoxes: totalBoxes.value,
-}))
-
 const hasGroups = computed(() => {
   if (!Array.isArray(destinationGroups.value)) return false
   return destinationGroups.value.some((group) => group?.destinations?.length > 0)
@@ -286,7 +269,7 @@ onMounted(() => {
 async function fetchDestinationOptions() {
   try {
     const response = await request.get('/api/master/options/destination-options')
-    console.log('ShippingOverview API响应:', response)
+    console.log('ShippingReportPage API响应:', response)
 
     // 处理不同的响应格式
     let data = null
@@ -306,7 +289,7 @@ async function fetchDestinationOptions() {
         value: item.cd,
         label: `${item.cd} - ${item.name}`,
       }))
-      console.log('ShippingOverview 处理后的destinationOptions:', destinationOptions.value)
+      console.log('ShippingReportPage 处理后的destinationOptions:', destinationOptions.value)
     } else {
       console.error('納入先データ格式不正确:', response)
       ElMessage.error('納入先データの取得に失敗しました')
@@ -436,21 +419,9 @@ function getSummaries(param) {
   return sums
 }
 
-// 打印处理
-function handlePrint() {
-  printDialogVisible.value = true
-}
-
-async function handleDownloadPDF() {
-  ElMessage.info('PDF生成中です、少々お待ちください...')
-  try {
-    const response = await downloadShippingOverviewPDF(overviewData.value, filters)
-    downloadBlob(response, `出荷一覧表_${filters.dateRange[0]}_${filters.dateRange[1]}.pdf`)
-    ElMessage.success('PDFのダウンロードが完了しました。')
-  } catch (error) {
-    console.error('PDFのダウンロードに失敗しました:', error)
-    ElMessage.error('PDFのダウンロードに失敗しました。')
-  }
+// 报告处理
+function handleReport() {
+  reportDialogVisible.value = true
 }
 
 // 执行前端打印
@@ -474,7 +445,7 @@ function executeFrontendPrint(contentRef) {
   printWindow.document.write(`
     <html>
       <head>
-        <title>印刷</title>
+        <title>出荷報告書印刷</title>
         ${styles}
       </head>
       <body>
@@ -494,23 +465,10 @@ function executeFrontendPrint(contentRef) {
   }
 }
 
-// 下载Blob文件
-function downloadBlob(blob, filename) {
-  const url = window.URL.createObjectURL(new Blob([blob]))
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', filename)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
-  ElMessage.success('PDF下载成功')
-}
-
 // 加载保存的分组
 function loadDestinationGroups() {
   try {
-    const savedGroups = localStorage.getItem('destination_groups_overview')
+    const savedGroups = localStorage.getItem('destination_groups_report')
     if (savedGroups) {
       const groups = JSON.parse(savedGroups)
       destinationGroups.value = groups
@@ -555,13 +513,13 @@ function handleGroupChange() {
 </script>
 
 <style scoped>
-.shipping-overview {
+.shipping-report-page {
   padding: 24px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
 }
 
-.overview-card {
+.report-card {
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: none;
@@ -575,7 +533,7 @@ function handleGroupChange() {
   justify-content: space-between;
   align-items: center;
   padding: 24px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
   border-radius: 16px 16px 0 0;
 }
@@ -666,10 +624,10 @@ function handleGroupChange() {
 .stats-section {
   margin: 32px;
   padding: 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   border-radius: 16px;
   color: white;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -741,7 +699,7 @@ function handleGroupChange() {
 }
 
 .overview-table-container :deep(.el-table__footer) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
   font-weight: 700;
 }
@@ -753,17 +711,17 @@ function handleGroupChange() {
 }
 
 .destination-icon {
-  color: #667eea;
+  color: #28a745;
   font-size: 16px;
 }
 
 .shipping-tag {
   font-weight: 600;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   border: none;
   color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 
 .total-boxes {
@@ -772,23 +730,23 @@ function handleGroupChange() {
 }
 
 /* 对话框样式 */
-.print-dialog {
+.report-dialog {
   border-radius: 16px;
   overflow: hidden;
 }
 
-.print-dialog :deep(.el-dialog) {
+.report-dialog :deep(.el-dialog) {
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
-.print-dialog :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.report-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
   padding: 20px 24px;
 }
 
-.print-content {
+.report-content {
   max-height: 70vh;
   overflow-y: auto;
   padding: 24px;
@@ -822,7 +780,7 @@ function handleGroupChange() {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .shipping-overview {
+  .shipping-report-page {
     padding: 16px;
   }
 
@@ -864,7 +822,7 @@ function handleGroupChange() {
   }
 }
 
-.overview-card {
+.report-card {
   animation: fadeInUp 0.6s ease-out;
 }
 
@@ -881,74 +839,21 @@ function handleGroupChange() {
 }
 
 /* 滚动条美化 */
-.print-content::-webkit-scrollbar {
+.report-content::-webkit-scrollbar {
   width: 8px;
 }
 
-.print-content::-webkit-scrollbar-track {
+.report-content::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.print-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.report-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   border-radius: 4px;
 }
 
-.print-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-/* 打印机选择对话框样式 */
-.printer-selection {
-  padding: 10px 0;
-}
-
-.printer-selection .el-form-item {
-  margin-bottom: 20px;
-}
-
-.printer-selection .el-form-item__label {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.printer-selection .el-tag {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.printer-selection .el-select {
-  width: 100%;
-}
-
-.printer-selection .el-radio-group {
-  display: flex;
-  gap: 20px;
-}
-
-.printer-selection .el-radio {
-  margin-right: 0;
-}
-
-.printer-selection .el-alert {
-  border-radius: 8px;
-}
-
-.printer-selection .el-alert ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.printer-selection .el-alert li {
-  margin-bottom: 4px;
-  color: #606266;
+.report-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #218838 0%, #1ea97c 100%);
 }
 </style>

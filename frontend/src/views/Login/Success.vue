@@ -36,7 +36,7 @@
         <h1 class="success-title">ログイン成功！</h1>
         <h2 class="welcome-message">ようこそ Smart-EMAP へ</h2>
         <p class="success-description">
-          システムへの認証が完了しました。<br>
+          システムへの認証が完了しました。<br />
           まもなくダッシュボードにリダイレクトします。
         </p>
       </div>
@@ -51,10 +51,26 @@
         <!-- 圆形进度条 -->
         <div class="circular-progress">
           <svg class="progress-ring" width="120" height="120">
-            <circle class="progress-ring-background" stroke="#e2e8f0" stroke-width="4" fill="transparent" r="56" cx="60"
-              cy="60" />
-            <circle class="progress-ring-progress" stroke="#48bb78" stroke-width="4" fill="transparent" r="56" cx="60"
-              cy="60" :stroke-dasharray="circumference" :stroke-dashoffset="dashOffset" />
+            <circle
+              class="progress-ring-background"
+              stroke="#e2e8f0"
+              stroke-width="4"
+              fill="transparent"
+              r="56"
+              cx="60"
+              cy="60"
+            />
+            <circle
+              class="progress-ring-progress"
+              stroke="#48bb78"
+              stroke-width="4"
+              fill="transparent"
+              r="56"
+              cx="60"
+              cy="60"
+              :stroke-dasharray="circumference"
+              :stroke-dashoffset="dashOffset"
+            />
           </svg>
         </div>
       </div>
@@ -63,7 +79,7 @@
       <div class="action-buttons">
         <el-button type="primary" @click="goToDashboard" size="large" class="primary-btn">
           <el-icon>
-            <Dashboard />
+            <DataBoard />
           </el-icon>
           今すぐダッシュボードへ
         </el-button>
@@ -111,7 +127,7 @@
       </div>
       <div class="decoration decoration-4">
         <el-icon>
-          <Crown />
+          <Trophy />
         </el-icon>
       </div>
     </div>
@@ -123,14 +139,13 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   SuccessFilled,
-  Dashboard,
+  DataBoard,
   Close,
   Clock,
   Location,
   Star,
   Trophy,
   Medal,
-  Crown
 } from '@element-plus/icons-vue'
 import type { CSSProperties } from 'vue'
 
@@ -191,7 +206,7 @@ const formatLoginTime = () => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   })
 }
 
@@ -265,7 +280,6 @@ onUnmounted(() => {
 }
 
 @keyframes particleFloat {
-
   0%,
   100% {
     transform: translateY(0) scale(1);
@@ -325,7 +339,6 @@ onUnmounted(() => {
 }
 
 @keyframes shapeFloat {
-
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
@@ -400,7 +413,6 @@ onUnmounted(() => {
 }
 
 @keyframes iconPulse {
-
   0%,
   100% {
     transform: scale(1);
@@ -565,7 +577,6 @@ onUnmounted(() => {
 }
 
 @keyframes numberPulse {
-
   0%,
   100% {
     transform: scale(1);
@@ -750,7 +761,6 @@ onUnmounted(() => {
 }
 
 @keyframes decorationFloat {
-
   0%,
   100% {
     transform: translateY(0) rotate(0deg);

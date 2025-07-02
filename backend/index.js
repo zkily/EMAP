@@ -33,6 +33,7 @@ import pickingRouter from "./routes/shipping/pickingRouter.js";
 import pickingExportRouter from "./routes/shipping/pickingExportRouter.js";
 import fileWatcherRouter from "./routes/shipping/fileWatcherRouter.js";
 import printingRouter from "./routes/shipping/printingRouter.js";
+import weldingShippingRouter from "./routes/shipping/weldingShippingRouter.js";
 
 // schedule
 import machineScheduleRouter from "./routes/schedule/machineSchedule.js";
@@ -84,6 +85,7 @@ app.use("/api/shipping/picking", pickingRouter);
 app.use("/api/shipping/export", pickingExportRouter);
 app.use("/api/shipping/file-watcher", fileWatcherRouter);
 app.use("/api/shipping/printing", printingRouter);
+app.use("/api/shipping/welding", weldingShippingRouter);
 
 // 错误处理
 app.use((err, req, res, next) => {

@@ -623,11 +623,25 @@ export const shippingMenu: MenuItem = {
       i18nKey: 'menu.shipping.list',
     },
     {
-      title: '出荷一覧表',
+      title: '出荷予定表',
       path: '/shipping/overview',
       icon: FileText,
       roles: ['admin', 'manager', 'staff'],
       i18nKey: 'menu.shipping.overview',
+    },
+    {
+      title: '出荷報告書',
+      path: '/shipping/report',
+      icon: History,
+      roles: ['admin', 'manager', 'staff'],
+      i18nKey: 'menu.shipping.report',
+    },
+    {
+      title: '溶接出荷管理',
+      path: '/shipping/welding',
+      icon: Package,
+      roles: ['admin', 'manager', 'staff'],
+      i18nKey: 'menu.shipping.welding',
     },
     // ========== ピッキング管理 ==========
     {

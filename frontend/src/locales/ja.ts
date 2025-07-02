@@ -34,8 +34,11 @@ export default {
     },
     shipping: {
       root: '出荷管理',
+      create: '出荷No作成',
       list: '出荷一覧',
       overview: '出荷一覧表',
+      report: '出荷報告書',
+      welding: '溶接出荷管理',
       dashboard: '出荷ダッシュボード',
       kpi: '出荷KPI',
       picking: {

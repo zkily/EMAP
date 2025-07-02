@@ -919,12 +919,23 @@ class PickingService {
 
       let todayOverview = (await dbQuery(todayOverviewQuery))[0];
 
+      console.log("Database query results:");
+      console.log("- palletList length:", palletList.length);
+      console.log("- progressStats length:", progressStats.length);
+      console.log("- todayOverview:", todayOverview);
+
       // 检查是否有数据，如果没有，则生成模拟数据
       let finalPalletList = palletList;
       let finalProgressStats = progressStats;
       let finalTodayOverview = todayOverview;
 
-      if (!palletList.length && !progressStats.length && !todayOverview.total_today) {
+      // 修正条件：如果todayOverview存在但total_today为0或null，也应该使用模拟数据
+      const hasValidData =
+        palletList.length > 0 ||
+        progressStats.length > 0 ||
+        (todayOverview && todayOverview.total_today > 0);
+
+      if (!hasValidData) {
         console.log("データベースに有効なデータがありません。モックデータを生成します。");
 
         const { mockPalletList, mockProgressStats, mockTodayOverview } =
@@ -932,6 +943,11 @@ class PickingService {
         finalPalletList = mockPalletList;
         finalProgressStats = mockProgressStats;
         finalTodayOverview = mockTodayOverview;
+
+        console.log("Generated mock data:");
+        console.log("- mockPalletList length:", mockPalletList.length);
+        console.log("- mockProgressStats length:", mockProgressStats.length);
+        console.log("- mockTodayOverview:", mockTodayOverview);
       }
 
       const result = {

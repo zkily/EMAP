@@ -1,4 +1,3 @@
-
 import { defineStore } from 'pinia'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
@@ -41,8 +40,5 @@ export const useTabStore = defineStore('tabStore', {
       this.activeTab = ''
     },
   },
-  persist: {
-    storage: localStorage,
-    paths: ['tabs', 'activeTab'],
-  } as any, // ✅ 加这句绕过类型检查
+  persist: true,
 })

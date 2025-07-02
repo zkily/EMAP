@@ -500,7 +500,7 @@ function createPage(shipping_date, destinations) {
 /* 页面容器 */
 .page-container {
   width: 100%;
-  height: 280mm; /* 调整页面高度 A4-调整后的上下边距 */
+  height: 260mm; /* 调整页面高度 A4-调整后的上下边距 */
   page-break-after: always;
   page-break-inside: avoid;
   display: flex;
@@ -529,7 +529,7 @@ function createPage(shipping_date, destinations) {
 .header-left,
 .header-right {
   flex: 2;
-  font-size: 15px; /* 字体增大 */
+  font-size: 14px; /* 字体增大 */
   font-weight: bold;
   margin-left: 8px;
 }
@@ -568,7 +568,7 @@ function createPage(shipping_date, destinations) {
   gap: 8px;
   margin-top: 4px;
   margin-bottom: 4px;
-  height: calc(280mm - 26px); /* 页面高度减去头部高度 */
+  height: calc(260mm - 26px); /* 页面高度减去头部高度 */
   /* overflow: hidden;  */
 }
 
@@ -676,17 +676,17 @@ function createPage(shipping_date, destinations) {
   .page-container {
     margin: 0;
     box-shadow: none;
-    height: 280mm !important; /* 强制固定页面高度 */
+    height: 260mm !important; /* 强制固定页面高度 */
     /* overflow: hidden !important; */
   }
 
   .print-body {
-    height: calc(280mm - 26px) !important;
+    height: calc(260mm - 26px) !important;
     /* overflow: hidden !important; */
   }
 
   .column {
-    max-height: calc(280mm - 26px) !important;
+    max-height: calc(260mm - 26px) !important;
     /* overflow: hidden !important; */
   }
 
@@ -697,7 +697,7 @@ function createPage(shipping_date, destinations) {
 
   /* 确保纳入先组不被分页 */
   .destination-group {
-    display: block !important;
+    /* display: block !important; */
     /* overflow: hidden !important; */
   }
 }

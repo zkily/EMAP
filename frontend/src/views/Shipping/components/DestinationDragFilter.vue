@@ -75,6 +75,16 @@
             納入先グループ
           </h3>
           <div class="pools-actions">
+            <el-button
+              @click="autoAssignByIssueType"
+              size="small"
+              type="warning"
+              :loading="autoAssignLoading"
+              class="auto-assign-button"
+            >
+              <el-icon><Star /></el-icon>
+              一键分配（按発行区分）
+            </el-button>
             <el-button @click="clearAllPools" size="small" type="warning">
               <el-icon><Delete /></el-icon>
               全てクリア
@@ -186,6 +196,7 @@ import {
   Box,
   Refresh,
   Rank,
+  Star,
 } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
@@ -217,9 +228,11 @@ const visible = ref(props.modelValue)
 const loading = ref(false)
 const searchKeyword = ref('')
 const sortOrder = ref<'code' | 'name'>('code')
+const autoAssignLoading = ref(false)
 
 // 納入先数据
 const allDestinations = ref<DestinationOption[]>([])
+const allDestinationsWithIssueType = ref<any[]>([])
 
 // 4个池子
 const pools = ref<Pool[]>([
@@ -405,6 +418,115 @@ const clearAllPools = () => {
     })
 }
 
+// 加载带issue_type的纳入先数据
+const loadDestinationsWithIssueType = async () => {
+  try {
+    const response = await request.get('/api/master/options/destination-options-with-issue-type')
+
+    let dataArray: any[] = []
+    if (Array.isArray(response)) {
+      dataArray = response
+    } else if (response && response.success === true && Array.isArray(response.data)) {
+      dataArray = response.data
+    } else if (response && Array.isArray(response.data)) {
+      dataArray = response.data
+    } else {
+      console.error('納入先データ格式不正确:', response)
+      return []
+    }
+
+    allDestinationsWithIssueType.value = dataArray
+    return dataArray
+  } catch (error) {
+    console.error('获取納入先数据失败:', error)
+    return []
+  }
+}
+
+// 根据issue_type自动分配纳入先
+const autoAssignByIssueType = async () => {
+  autoAssignLoading.value = true
+
+  try {
+    // 加载带issue_type的数据
+    const destinationsWithIssueType = await loadDestinationsWithIssueType()
+
+    if (destinationsWithIssueType.length === 0) {
+      ElMessage.warning('納入先データが取得できませんでした')
+      return
+    }
+
+    // 清空现有分组
+    pools.value.forEach((pool) => {
+      pool.destinations = []
+    })
+
+    // 按issue_type分组
+    const groupsByIssueType: { [key: string]: any[] } = {}
+
+    destinationsWithIssueType.forEach((dest) => {
+      let issueType = dest.issue_type
+
+      // 处理不同的issue_type格式
+      if (issueType === null || issueType === undefined || issueType === '') {
+        issueType = '1' // 默认分配到组1
+      } else if (typeof issueType === 'number') {
+        issueType = issueType.toString()
+      } else if (typeof issueType === 'string') {
+        // 处理日文字符串
+        if (issueType === '自動') {
+          issueType = '1'
+        } else if (issueType === '手動') {
+          issueType = '2'
+        }
+        // 其他字符串保持原样
+      }
+
+      // 确保issueType是有效的组索引
+      if (!['1', '2', '3', '4'].includes(issueType)) {
+        issueType = '1' // 默认分配到组1
+      }
+
+      if (!groupsByIssueType[issueType]) {
+        groupsByIssueType[issueType] = []
+      }
+
+      groupsByIssueType[issueType].push({
+        value: dest.cd,
+        label: `${dest.cd} - ${dest.name}`,
+      })
+    })
+
+    // 分配到对应的池子
+    Object.keys(groupsByIssueType).forEach((issueType) => {
+      const poolIndex = parseInt(issueType) - 1 // 转换为0-based索引
+      if (poolIndex >= 0 && poolIndex < pools.value.length) {
+        pools.value[poolIndex].destinations = groupsByIssueType[issueType]
+      }
+    })
+
+    // 计算分配结果
+    const totalAssigned = Object.values(groupsByIssueType).reduce(
+      (sum, group) => sum + group.length,
+      0,
+    )
+
+    // 显示分配详情
+    const assignmentDetails = Object.keys(groupsByIssueType)
+      .map((issueType) => `グループ${issueType}: ${groupsByIssueType[issueType].length}件`)
+      .join(', ')
+
+    ElMessage.success(
+      `発行区分に基づいて${totalAssigned}件の納入先を自動分配しました (${assignmentDetails})`,
+    )
+  } catch (error) {
+    console.error('自动分配失败:', error)
+    ElMessage.error('自動分配に失敗しました')
+  } finally {
+    autoAssignLoading.value = false
+  }
+}
+
 // 保存分组
 const saveGroups = () => {
   try {
@@ -412,7 +534,7 @@ const saveGroups = () => {
       name: pool.name,
       destinations: pool.destinations,
     }))
-    localStorage.setItem('destination_groups', JSON.stringify(groupsData))
+    localStorage.setItem('destination_groups_drag', JSON.stringify(groupsData))
     ElMessage.success('グループを保存しました')
   } catch (error) {
     console.error('保存分组失败:', error)
@@ -423,7 +545,7 @@ const saveGroups = () => {
 // 加载已保存的分组
 const loadSavedGroups = () => {
   try {
-    const savedGroups = localStorage.getItem('destination_groups')
+    const savedGroups = localStorage.getItem('destination_groups_drag')
     if (savedGroups) {
       const groups = JSON.parse(savedGroups)
       groups.forEach((group: any, index: number) => {
@@ -708,6 +830,29 @@ onMounted(() => {
 .pools-actions {
   display: flex;
   gap: 8px;
+}
+
+.auto-assign-button {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+.auto-assign-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+}
+
+.auto-assign-button:disabled {
+  background: #bdc3c7;
+  color: #7f8c8d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .pools-grid {

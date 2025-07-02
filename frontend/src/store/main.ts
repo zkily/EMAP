@@ -42,13 +42,13 @@ export const useMainStore = defineStore('main', {
       const rolePermissionMap: Record<string, string[]> = {
         manager: ['view', 'edit', 'dashboard'],
         user: ['view'],
-        guest: []
+        guest: [],
       }
 
       const userPermissions = rolePermissionMap[this.userInfo.role] || []
 
       return Array.isArray(permission)
-        ? permissionsToCheck.every(p => userPermissions.includes(p))
+        ? permissionsToCheck.every((p) => userPermissions.includes(p))
         : userPermissions.includes(permission)
     },
     generateMenu(role: string) {
@@ -98,5 +98,5 @@ export const useMainStore = defineStore('main', {
       this.menuList = groupedMenus[role] || []
     },
   },
-  persist: ['userInfo', 'token', 'menuList', 'showGuide'] as any,
+  persist: true,
 })

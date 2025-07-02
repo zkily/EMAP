@@ -86,30 +86,17 @@
           <div class="filter-group destination-group">
             <label class="filter-label">納入先</label>
             <div class="destination-controls">
-              <!-- 传统下拉选择 -->
-              <el-select
-                v-model="singleDestination"
-                placeholder="選択"
-                clearable
-                filterable
-                class="destination-dropdown"
+              <!-- 纳入先选择按钮 -->
+              <el-button
+                @click="destinationSelectDialogVisible = true"
+                class="destination-select-button"
                 size="small"
-                style="width: 120px"
-                @change="handleSingleDestinationChange"
                 :disabled="selectedDestinations.length > 0 || !!selectedGroupFilter"
               >
-                <el-option
-                  v-for="dest in destinationOptions"
-                  :key="dest.value"
-                  :label="dest.value"
-                  :value="dest.value"
-                >
-                  <div class="destination-option">
-                    <span class="dest-code">{{ dest.value }}</span>
-                    <span class="dest-name">{{ dest.label.split(' - ')[1] }}</span>
-                  </div>
-                </el-option>
-              </el-select>
+                <el-icon><Location /></el-icon>
+                <span v-if="!singleDestination">納入先選択</span>
+                <span v-else>{{ singleDestination }}</span>
+              </el-button>
 
               <!-- 分组筛选下拉框 -->
               <el-select
@@ -659,6 +646,56 @@
       @confirm="handleDestinationGroupsConfirm"
     />
 
+    <!-- 納入先选择ダイアログ -->
+    <el-dialog
+      v-model="destinationSelectDialogVisible"
+      title="納入先選択"
+      width="600px"
+      class="destination-select-dialog"
+    >
+      <div class="destination-select-container">
+        <div class="search-section">
+          <el-input
+            v-model="destinationSearchKeyword"
+            placeholder="納入先を検索..."
+            clearable
+            class="search-input"
+            size="default"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <div class="destinations-list">
+          <div
+            v-for="dest in filteredDestinationOptions"
+            :key="dest.value"
+            class="destination-item"
+            :class="{ selected: selectedDestinationInDialog === dest.value }"
+            @click="selectDestinationInDialog(dest.value)"
+          >
+            <div class="destination-code">{{ dest.value }}</div>
+            <div class="destination-name">{{ dest.label.split(' - ')[1] || dest.label }}</div>
+            <el-icon v-if="selectedDestinationInDialog === dest.value" class="check-icon">
+              <Check />
+            </el-icon>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="destinationSelectDialogVisible = false">キャンセル</el-button>
+          <el-button @click="clearDestinationSelection" v-if="selectedDestinationInDialog">
+            クリア
+          </el-button>
+          <el-button type="primary" @click="confirmDestinationSelection"> 確定 </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 未ピッキング検出ダイアログ -->
     <UnpickedOrdersDialog
       v-model="unpickedDialogVisible"
@@ -844,12 +881,17 @@ const tableKey = ref(0)
 
 // 納入先選択
 const destinationDragDialogVisible = ref(false)
+const destinationSelectDialogVisible = ref(false)
 const destinationOptions = ref<{ value: string; label: string }[]>([])
 const selectedDestinations = ref<string[]>([])
 const destinationGroups = ref<any[]>([]) // 保存分组信息
 
 // 单选納入先
 const singleDestination = ref<string>('')
+
+// 纳入先选择对话框相关
+const destinationSearchKeyword = ref<string>('')
+const selectedDestinationInDialog = ref<string>('')
 
 // 活跃的分组
 const activeGroups = ref<any[]>([])
@@ -859,6 +901,29 @@ const selectedGroupFilter = ref<number | undefined>(undefined)
 
 // 可用的分组（从localStorage加载）
 const availableGroups = ref<any[]>([])
+
+// 过滤后的纳入先选项（用于对话框）
+const filteredDestinationOptions = computed(() => {
+  if (!destinationOptions.value || destinationOptions.value.length === 0) {
+    return []
+  }
+
+  let destinations = [...destinationOptions.value]
+
+  // 搜索过滤
+  if (destinationSearchKeyword.value) {
+    const keyword = destinationSearchKeyword.value.toLowerCase()
+    destinations = destinations.filter(
+      (dest) =>
+        dest.value.toLowerCase().includes(keyword) || dest.label.toLowerCase().includes(keyword),
+    )
+  }
+
+  // 按代码排序
+  destinations.sort((a, b) => a.value.localeCompare(b.value))
+
+  return destinations
+})
 
 // 处理拖拽分组确认
 const handleDestinationGroupsConfirm = (groups: any[], allSelected: string[]) => {
@@ -870,7 +935,7 @@ const handleDestinationGroupsConfirm = (groups: any[], allSelected: string[]) =>
 
   // 保存分组到localStorage并更新可用分组列表
   try {
-    localStorage.setItem('destination_groups', JSON.stringify(groups))
+    localStorage.setItem('destination_groups_list', JSON.stringify(groups))
     loadSavedGroups() // 重新加载可用分组
   } catch (error) {
     console.error('保存分组失败:', error)
@@ -911,6 +976,29 @@ const handleSingleDestinationChange = (value: string) => {
     filters.value.destination_cd = ''
     fetchData()
   }
+}
+
+// 纳入先选择对话框相关方法
+const selectDestinationInDialog = (value: string) => {
+  selectedDestinationInDialog.value = value
+}
+
+const clearDestinationSelection = () => {
+  selectedDestinationInDialog.value = ''
+}
+
+const confirmDestinationSelection = () => {
+  if (selectedDestinationInDialog.value) {
+    singleDestination.value = selectedDestinationInDialog.value
+    handleSingleDestinationChange(selectedDestinationInDialog.value)
+  } else {
+    singleDestination.value = ''
+    handleSingleDestinationChange('')
+  }
+
+  destinationSelectDialogVisible.value = false
+  destinationSearchKeyword.value = ''
+  selectedDestinationInDialog.value = ''
 }
 
 // 清空所有分组
@@ -986,7 +1074,7 @@ const handleGroupFilterChange = (groupIndex: number | undefined) => {
 // 加载保存的分组
 const loadSavedGroups = () => {
   try {
-    const savedGroups = localStorage.getItem('destination_groups')
+    const savedGroups = localStorage.getItem('destination_groups_list')
     if (savedGroups) {
       const groups = JSON.parse(savedGroups)
       // 只显示有内容的分组
@@ -3772,32 +3860,34 @@ async function exportPickingCSVData(): Promise<void> {
   gap: 8px;
 }
 
-.destination-dropdown {
-  flex-shrink: 0;
-}
-
-.destination-option {
+.destination-select-button {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  width: 100%;
-}
-
-.dest-code {
-  font-weight: 600;
-  color: #2c3e50;
-  font-size: 12px;
-}
-
-.dest-name {
+  gap: 4px;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  transition: all 0.3s ease;
   font-size: 11px;
-  color: #7f8c8d;
-  margin-left: 8px;
-  flex: 1;
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+  height: 28px;
+  min-width: 100px;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.destination-select-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2980b9, #21618c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.destination-select-button:disabled {
+  background: #c0c4cc;
+  color: #a8abb2;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .group-filter-dropdown {
@@ -3973,6 +4063,102 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 /* 納入先拖拽分组选择相关样式已移至DestinationDragFilter组件 */
+
+/* 納入先选择对话框样式 */
+.destination-select-dialog {
+  border-radius: 16px;
+}
+
+.destination-select-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+
+.destination-select-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.destination-select-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.destination-select-dialog :deep(.el-dialog__body) {
+  padding: 0;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.destination-select-container {
+  padding: 24px;
+}
+
+.search-section {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.destinations-list {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  background: white;
+}
+
+.destination-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f7fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.destination-item:hover {
+  background: rgba(52, 152, 219, 0.05);
+  transform: translateX(4px);
+}
+
+.destination-item.selected {
+  background: linear-gradient(135deg, #e8f4fd, #d1ecf1);
+  border-left: 4px solid #3498db;
+  color: #2c3e50;
+}
+
+.destination-item:last-child {
+  border-bottom: none;
+}
+
+.destination-code {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 80px;
+}
+
+.destination-name {
+  flex: 1;
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-left: 12px;
+}
+
+.check-icon {
+  color: #27ae60;
+  font-size: 16px;
+  font-weight: bold;
+}
 
 /* 响应式设计 */
 @media (max-width: 1200px) {

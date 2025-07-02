@@ -412,29 +412,44 @@ const fetchProgressData = async () => {
             return itemDate === today || itemDate.startsWith(today)
           })
 
-          const totalToday = todayItems.length
-          const pendingToday = todayItems.filter(
-            (item: any) =>
-              item.status === 'pending' ||
-              item.status === '進行中' ||
-              item.status === 'in_progress',
-          ).length
-          const completedToday = todayItems.filter(
-            (item: any) =>
-              item.status === 'completed' || item.status === '完了' || item.status === 'finished',
-          ).length
-          const completionRate =
-            totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
+          // 只有当有过滤后的数据时才重新计算，否则保持原有的todayOverview
+          if (todayItems.length > 0) {
+            const totalToday = todayItems.length
+            const pendingToday = todayItems.filter(
+              (item: any) =>
+                item.status === 'pending' ||
+                item.status === '進行中' ||
+                item.status === 'in_progress',
+            ).length
+            const completedToday = todayItems.filter(
+              (item: any) =>
+                item.status === 'completed' || item.status === '完了' || item.status === 'finished',
+            ).length
+            const completionRate =
+              totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0
 
-          filtered.todayOverview = {
-            total_today: totalToday,
-            pending_today: pendingToday,
-            completed_today: completedToday,
-            today_completion_rate: completionRate,
+            filtered.todayOverview = {
+              total_today: totalToday,
+              pending_today: pendingToday,
+              completed_today: completedToday,
+              today_completion_rate: completionRate,
+            }
+
+            // 更新 palletList 也只显示当天数据
+            filtered.palletList = todayItems
+          } else {
+            // 如果过滤后没有当天数据，保持原有的todayOverview数据
+            console.log('过滤后没有当天数据，保持原有统计数据')
+            if (filtered.todayOverview && typeof filtered.todayOverview === 'object') {
+              const overview = filtered.todayOverview
+              filtered.todayOverview = {
+                total_today: overview.total_today || 0,
+                pending_today: overview.pending_today || 0,
+                completed_today: overview.completed_today || 0,
+                today_completion_rate: overview.today_completion_rate || 0,
+              }
+            }
           }
-
-          // 更新 palletList 也只显示当天数据
-          filtered.palletList = todayItems
         } else if (filtered.todayOverview && typeof filtered.todayOverview === 'object') {
           // 如果没有 palletList 数据，保持原有逻辑但确保数值有效
           const overview = filtered.todayOverview
@@ -453,16 +468,33 @@ const fetchProgressData = async () => {
     }
 
     if (responseData && typeof responseData === 'object') {
+      console.log('原始响应数据:', responseData)
+
       // 应用数据过滤
       const filteredResponse = filterProductData(responseData)
 
+      console.log('过滤后的响应数据:', filteredResponse)
+
       palletList.value = filteredResponse.palletList || []
       progressStats.value = filteredResponse.progressStats || generateTestData()
-      todayOverview.value = filteredResponse.todayOverview || {
-        total_today: 45,
-        pending_today: 12,
-        completed_today: 33,
-        today_completion_rate: 73,
+
+      // 确保todayOverview有有效数据
+      if (
+        filteredResponse.todayOverview &&
+        (filteredResponse.todayOverview.total_today > 0 ||
+          filteredResponse.todayOverview.pending_today > 0 ||
+          filteredResponse.todayOverview.completed_today > 0)
+      ) {
+        todayOverview.value = filteredResponse.todayOverview
+      } else {
+        // 使用默认的示例数据
+        console.log('使用默认示例数据')
+        todayOverview.value = {
+          total_today: 45,
+          pending_today: 12,
+          completed_today: 33,
+          today_completion_rate: 73,
+        }
       }
 
       console.log('数据加载完成:', {

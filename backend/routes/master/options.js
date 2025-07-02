@@ -64,6 +64,25 @@ router.get("/destination-options", async (req, res) => {
   }
 });
 
+// 納入先（含issue_type）
+router.get("/destination-options-with-issue-type", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT destination_cd, destination_name, issue_type FROM delivery_destinations ORDER BY destination_name`,
+    );
+    res.json({
+      success: true,
+      data: rows.map((row) => ({
+        cd: row.destination_cd,
+        name: row.destination_name,
+        issue_type: row.issue_type,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "納入先情報の取得に失敗しました" });
+  }
+});
+
 // 仕入先
 router.get("/supplier-options", async (req, res) => {
   try {

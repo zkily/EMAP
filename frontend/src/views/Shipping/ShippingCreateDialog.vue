@@ -394,7 +394,7 @@
                         <el-button
                           type="success"
                           size="small"
-                          @click="recalculatePallets"
+                          @click="recalculatePalletsWithExpandedDisplay"
                           :disabled="selectedItems.length === 0"
                           class="recalculate-btn"
                         >
@@ -798,7 +798,24 @@
                       show-overflow-tooltip
                     >
                       <template #default="{ row }">
-                        <div v-if="row.product_name && row.product_name.includes(',')">
+                        <!-- 展开的混載製品显示 -->
+                        <div v-if="row.isMixedProductExpanded" class="expanded-mixed-product">
+                          <el-tag size="small" type="success" effect="light">
+                            <el-icon><Box /></el-icon>
+                            {{ row.remarks }}
+                          </el-tag>
+                          <div style="margin-top: 4px; font-weight: 500">
+                            {{ row.product_name }}
+                          </div>
+                        </div>
+                        <!-- 原始混載製品显示（未展开） -->
+                        <div
+                          v-else-if="
+                            row.product_name &&
+                            row.product_name.includes(',') &&
+                            !row.isMixedProductExpanded
+                          "
+                        >
                           <el-tooltip
                             placement="top-start"
                             :visible-arrow="false"
@@ -935,6 +952,7 @@
                             <el-tag size="small" type="info">混載製品</el-tag>
                           </el-tooltip>
                         </div>
+                        <!-- 单一产品显示 -->
                         <div v-else>{{ row.product_name }}</div>
                       </template>
                     </el-table-column>
@@ -1506,7 +1524,7 @@ watch(
   () => selectedItems.value,
   () => {
     if (selectedItems.value.length > 0) {
-      recalculatePallets()
+      recalculatePalletsWithExpandedDisplay()
     } else {
       pallets.value = []
     }
@@ -2415,8 +2433,8 @@ async function addToSelectedItems(items) {
 
   if (finalItems.length > 0) {
     ElMessage.success(`${finalItems.length} 件の項目を追加しました`)
-    // 添加后立即重新计算托盘分配
-    recalculatePallets()
+    // 添加后立即重新计算托盘分配，并将混載製品拆分显示
+    recalculatePalletsWithExpandedDisplay()
   }
 }
 
@@ -2466,7 +2484,7 @@ function removeSelectedItem(item) {
 
     // 重新计算托盘分配
     if (selectedItems.value.length > 0) {
-      recalculatePallets()
+      recalculatePalletsWithExpandedDisplay()
     } else {
       pallets.value = []
     }
@@ -2477,14 +2495,14 @@ function removeSelectedItem(item) {
 function itemUnitsChanged(item) {
   // 根据数量更新箱数
   item.confirmed_boxes = Math.ceil(item.confirmed_units / settings.value.unitsPerBox)
-  recalculatePallets()
+  recalculatePalletsWithExpandedDisplay()
 }
 
 // 项目箱数变更
 function itemBoxesChanged(item) {
   // 根据箱数更新数量
   item.confirmed_units = item.confirmed_boxes * settings.value.unitsPerBox
-  recalculatePallets()
+  recalculatePalletsWithExpandedDisplay()
 }
 
 // 重新计算托盘分配
@@ -2942,6 +2960,89 @@ function recalculatePallets() {
 
   //  console.log('生成的托盘数量:', newPallets.length)
   pallets.value = newPallets
+}
+
+// 重新计算托盘分配并展开混載製品显示
+function recalculatePalletsWithExpandedDisplay() {
+  // 先执行正常的托盘分配
+  recalculatePallets()
+
+  // 然后展开混載製品，将每个混載製品的detail拆分成单独的条目
+  expandMixedProductsInPallets()
+
+  // 对パレット番号进行排序
+  sortPalletNumbers()
+}
+
+// 展开混載製品显示
+function expandMixedProductsInPallets() {
+  if (!pallets.value || pallets.value.length === 0) return
+
+  const expandedPallets = []
+
+  pallets.value.forEach((pallet) => {
+    // 检查是否为混載パレット（有detail且长度大于1）
+    if (pallet.detail && pallet.detail.length > 1) {
+      console.log('展开混載パレット:', pallet.shipping_no_prefix + pallet.shipping_no_serial)
+
+      // 为每个detail创建单独的条目
+      pallet.detail.forEach((detailItem, index) => {
+        const expandedPallet = {
+          ...pallet,
+          // 保持原始的shipping_no_prefix和serial，不添加后缀
+          shipping_no_prefix: pallet.shipping_no_prefix,
+          shipping_no_serial: pallet.shipping_no_serial,
+          product_cd: detailItem.product_cd,
+          product_name: detailItem.product_name,
+          box_type: detailItem.box_type,
+          confirmed_boxes: detailItem.confirmed_boxes,
+          confirmed_units: detailItem.confirmed_units,
+          delivery_date: detailItem.delivery_date,
+          remarks: `混載製品 ${index + 1}/${pallet.detail.length}`,
+          detail: [detailItem], // 只保留当前项目的detail
+          originalPalletId: pallet.shipping_no_prefix + pallet.shipping_no_serial, // 保存原始托盘ID
+          isMixedProductExpanded: true, // 标记为展开的混載製品
+        }
+        expandedPallets.push(expandedPallet)
+      })
+    } else {
+      // 非混載パレット或单一产品，直接添加
+      expandedPallets.push(pallet)
+    }
+  })
+
+  pallets.value = expandedPallets
+  console.log('混載製品展开完成，总托盘数:', pallets.value.length)
+}
+
+// 对パレット番号进行排序
+function sortPalletNumbers() {
+  if (!pallets.value || pallets.value.length === 0) return
+
+  pallets.value.sort((a, b) => {
+    // 先按prefix排序
+    const prefixCompare = (a.shipping_no_prefix || '').localeCompare(b.shipping_no_prefix || '')
+    if (prefixCompare !== 0) return prefixCompare
+
+    // 再按serial排序
+    const serialA = a.shipping_no_serial || ''
+    const serialB = b.shipping_no_serial || ''
+
+    // 如果都是数字，按数字排序
+    const numA = parseInt(serialA.replace(/[A-Z]/g, ''))
+    const numB = parseInt(serialB.replace(/[A-Z]/g, ''))
+
+    if (!isNaN(numA) && !isNaN(numB)) {
+      if (numA !== numB) return numA - numB
+      // 如果数字部分相同，按字母排序
+      return serialA.localeCompare(serialB)
+    }
+
+    // 否则按字符串排序
+    return serialA.localeCompare(serialB)
+  })
+
+  console.log('パレット番号排序完成')
 }
 
 /*
@@ -7449,5 +7550,24 @@ function applyChangesAndClose() {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* 展开混載製品样式 */
+.expanded-mixed-product {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.expanded-mixed-product .el-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.expanded-mixed-product .el-tag .el-icon {
+  font-size: 10px;
+  margin-right: 2px;
 }
 </style>
