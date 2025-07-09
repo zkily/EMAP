@@ -34,6 +34,10 @@ import pickingExportRouter from "./routes/shipping/pickingExportRouter.js";
 import fileWatcherRouter from "./routes/shipping/fileWatcherRouter.js";
 import printingRouter from "./routes/shipping/printingRouter.js";
 import weldingShippingRouter from "./routes/shipping/weldingShippingRouter.js";
+import printHistoryRouter from "./routes/shipping/printHistoryRouter.js";
+
+// 外注管理
+import outsourcingRouter from "./routes/outsourcing.js";
 
 // schedule
 import machineScheduleRouter from "./routes/schedule/machineSchedule.js";
@@ -74,7 +78,7 @@ app.use("/api/schedule", machineScheduleRouter);
 app.use("/api/schedule/production", scheduleRouter);
 
 // 在庫管理
-// startStockTransactionWatcher(); // 监听文件导入
+startStockTransactionWatcher(); // 监听文件导入
 app.use("/api/stock", stockRoutes);
 app.use("/api/stock/wip", wipStockRoutes);
 app.use("/api/stock/materials", materialsRouter);
@@ -86,6 +90,10 @@ app.use("/api/shipping/export", pickingExportRouter);
 app.use("/api/shipping/file-watcher", fileWatcherRouter);
 app.use("/api/shipping/printing", printingRouter);
 app.use("/api/shipping/welding", weldingShippingRouter);
+app.use("/api/shipping/print", printHistoryRouter);
+
+// 外注管理
+app.use("/api/outsourcing", outsourcingRouter);
 
 // 错误处理
 app.use((err, req, res, next) => {

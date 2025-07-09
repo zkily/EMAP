@@ -5,26 +5,37 @@
       <div class="header-left">
         <p v-if="result?.updatedCount" class="summary-text">
           ✅ 更新件数: <strong>{{ result.updatedCount }}</strong> 件
-          <span v-if="executedAt" class="executed-at">📅 最終再計算日時：{{ formatExecutedAt(executedAt) }}</span>
+          <span v-if="executedAt" class="executed-at"
+            >📅 最終再計算日時：{{ formatExecutedAt(executedAt) }}</span
+          >
         </p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" :loading="loading" @click="confirmRecalculate" round icon="Refresh">
+        <el-button
+          type="primary"
+          :loading="loading"
+          @click="confirmRecalculate"
+          round
+          icon="Refresh"
+        >
           再計算を実行
         </el-button>
-        <el-button type="success" @click="handlePrint" round icon="Printer">
-          印刷
-        </el-button>
+        <el-button type="success" @click="handlePrint" round icon="Printer"> 印刷 </el-button>
       </div>
     </div>
 
     <!-- メッセージ -->
-    <el-alert v-if="result?.message" :title="result.message" :type="result?.updatedCount ? 'success' : 'info'" show-icon
-      class="alert-box" />
+    <el-alert
+      v-if="result?.message"
+      :title="result.message"
+      :type="result?.updatedCount ? 'success' : 'info'"
+      show-icon
+      class="alert-box"
+    />
 
     <!-- ❌ 負在庫 -->
     <el-card v-if="result.anomalies.negativeStock.length" class="anomaly-card" shadow="never">
-      <template #header>❌ <strong>負在庫一覧</strong></template>
+      <template #header>❌ <strong>在庫不足一覧</strong></template>
       <el-table :data="result.anomalies.negativeStock" border stripe size="small">
         <el-table-column label="製品CD" prop="product_cd" width="120" />
         <el-table-column label="製品名" prop="product_name" width="180" />
@@ -66,7 +77,9 @@
       <div class="stock-summary-cards">
         <el-card class="summary-card" shadow="hover">
           <div class="summary-title">📋 件数</div>
-          <div class="summary-value count-color">{{ filteredStockList.length.toLocaleString() }}</div>
+          <div class="summary-value count-color">
+            {{ filteredStockList.length.toLocaleString() }}
+          </div>
         </el-card>
         <el-card class="summary-card" shadow="hover">
           <div class="summary-title">📦 総箱数</div>
@@ -76,11 +89,14 @@
           <div class="summary-title">📦 総在庫数</div>
           <div class="summary-value quantity-color">{{ totalQuantity.toLocaleString() }}</div>
         </el-card>
-
       </div>
 
       <!-- 箱型統計 -->
-      <el-card v-if="result.boxTypeStats && result.boxTypeStats.length > 0" class="box-stats-card" shadow="hover">
+      <el-card
+        v-if="result.boxTypeStats && result.boxTypeStats.length > 0"
+        class="box-stats-card"
+        shadow="hover"
+      >
         <template #header>
           <div class="box-stats-header">
             <h4>箱タイプ別集計</h4>
@@ -94,10 +110,23 @@
         </div>
       </el-card>
 
-      <el-input v-model="searchKeyword" placeholder="製品CD、製品名または納入先名で検索" clearable size="small" class="search-input" />
+      <el-input
+        v-model="searchKeyword"
+        placeholder="製品CD、製品名または納入先名で検索"
+        clearable
+        size="small"
+        class="search-input"
+      />
 
-      <el-table :data="pagedStockList" border stripe size="small" height="420" @sort-change="handleSort"
-        class="stock-table">
+      <el-table
+        :data="pagedStockList"
+        border
+        stripe
+        size="small"
+        height="420"
+        @sort-change="handleSort"
+        class="stock-table"
+      >
         <el-table-column label="倉庫CD" prop="location_cd" width="140" />
         <el-table-column label="納入先名" prop="destination_name" min-width="140" />
         <!-- <el-table-column label="製品CD" prop="product_cd" width="120" /> -->
@@ -118,11 +147,16 @@
             <span class="quantity-highlight">{{ row.quantity?.toLocaleString() || '0' }}</span>
           </template>
         </el-table-column>
-
       </el-table>
 
-      <el-pagination v-model:current-page="currentPage" :page-size="pageSize" layout="prev, pager, next"
-        :total="filteredStockList.length" size="small" class="pagination" />
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        layout="prev, pager, next"
+        :total="filteredStockList.length"
+        size="small"
+        class="pagination"
+      />
     </el-card>
   </el-card>
 </template>
@@ -178,9 +212,9 @@ interface Result {
     negativeStock: NegativeStockItem[]
     multiLocations: MultiLocationItem[]
     duplicateLots: DuplicateLotItem[]
-  },
+  }
   stockList: StockItem[]
-  boxTypeStats?: { box_type: string, total_boxes: number }[]
+  boxTypeStats?: { box_type: string; total_boxes: number }[]
 }
 
 const loading = ref(false)
@@ -188,7 +222,7 @@ const result = ref<Result>({
   message: '',
   updatedCount: 0,
   anomalies: { negativeStock: [], multiLocations: [], duplicateLots: [] },
-  stockList: []
+  stockList: [],
 })
 
 const executedAt = ref<string | null>(null)
@@ -204,24 +238,39 @@ const handleSort = ({ prop, order }: SortChangeEvent) => {
 }
 
 const totalQuantity = computed(() =>
-  filteredStockList.value.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
+  filteredStockList.value
+    .filter(
+      (item) => !item.product_name?.includes('加工') && !item.product_name?.includes('アーチ'),
+    )
+    .reduce((sum, item) => sum + (item.quantity ?? 0), 0),
 )
 
 const totalBoxes = computed(() =>
-  filteredStockList.value.reduce((sum, item) => sum + (item.boxes ?? 0), 0)
+  filteredStockList.value
+    .filter(
+      (item) => !item.product_name?.includes('加工') && !item.product_name?.includes('アーチ'),
+    )
+    .reduce((sum, item) => sum + (item.boxes ?? 0), 0),
 )
 
 const filteredStockList = computed(() => {
   if (!result.value?.stockList) return []
 
-  if (!searchKeyword.value.trim()) return result.value.stockList
+  // 首先过滤掉产品名包含"加工"或"アーチ"的产品
+  let filtered = result.value.stockList.filter(
+    (item) => !item.product_name?.includes('加工') && !item.product_name?.includes('アーチ'),
+  )
+
+  // 然后根据搜索关键词进一步过滤
+  if (!searchKeyword.value.trim()) return filtered
 
   const keyword = searchKeyword.value.toLowerCase().trim()
-  return result.value.stockList.filter(item => (
-    (item.product_cd?.toLowerCase() || '').includes(keyword) ||
-    (item.product_name?.toLowerCase() || '').includes(keyword) ||
-    (item.destination_name?.toLowerCase() || '').includes(keyword)
-  ))
+  return filtered.filter(
+    (item) =>
+      (item.product_cd?.toLowerCase() || '').includes(keyword) ||
+      (item.product_name?.toLowerCase() || '').includes(keyword) ||
+      (item.destination_name?.toLowerCase() || '').includes(keyword),
+  )
 })
 
 const sortedList = computed(() => {
@@ -233,9 +282,7 @@ const sortedList = computed(() => {
     const valA = a[prop] ?? ''
     const valB = b[prop] ?? ''
     if (valA === valB) return 0
-    return sortOrder.value === 'ascending'
-      ? valA > valB ? 1 : -1
-      : valA < valB ? 1 : -1
+    return sortOrder.value === 'ascending' ? (valA > valB ? 1 : -1) : valA < valB ? 1 : -1
   })
 })
 
@@ -248,7 +295,9 @@ const isAuto = ref(true)
 const handleRecalculate = async () => {
   loading.value = true
   try {
-    const res = await request.post('/api/stock/products/recalculate-and-check', { auto: isAuto.value })
+    const res = await request.post('/api/stock/products/recalculate-and-check', {
+      auto: isAuto.value,
+    })
     result.value = res
     executedAt.value = res.executedAt
     if (!isAuto.value) {
@@ -272,21 +321,28 @@ const confirmRecalculate = () => {
     confirmButtonText: 'はい',
     cancelButtonText: 'いいえ',
     type: 'warning',
-  }).then(() => {
-    isAuto.value = false  // 确保手动点击时isAuto为false
-    handleRecalculate()
-  }).catch(() => {
-    // 用户取消，不做任何操作
   })
+    .then(() => {
+      isAuto.value = false // 确保手动点击时isAuto为false
+      handleRecalculate()
+    })
+    .catch(() => {
+      // 用户取消，不做任何操作
+    })
 }
 
 const handlePrint = () => {
-  const sorted = [...result.value.stockList].sort((a, b) => {
-    const nameA = (a.product_name ?? '').toLowerCase()
-    const nameB = (b.product_name ?? '').toLowerCase()
-    if (nameA === nameB) return 0
-    return nameA > nameB ? 1 : -1
-  })
+  // 过滤掉产品名包含"加工"或"アーチ"的产品，然后排序
+  const sorted = [...result.value.stockList]
+    .filter(
+      (item) => !item.product_name?.includes('加工') && !item.product_name?.includes('アーチ'),
+    )
+    .sort((a, b) => {
+      const nameA = (a.product_name ?? '').toLowerCase()
+      const nameB = (b.product_name ?? '').toLowerCase()
+      if (nameA === nameB) return 0
+      return nameA > nameB ? 1 : -1
+    })
 
   // 使用后端返回的箱型统计
   const boxTypeStatsData = result.value.boxTypeStats || []
@@ -370,18 +426,26 @@ const handlePrint = () => {
       <body>
         <h2>📦 製品在庫一覧 印刷用</h2>
         <div class="summary">
-          <span>総件数: ${filteredStockList.value.length}</span>
-          <span>総在庫数: ${totalQuantity.value.toLocaleString()}</span>
-          <span>総箱数: ${totalBoxes.value.toLocaleString()}</span>
+          <span>総件数: ${sorted.length}</span>
+          <span>総在庫数: ${sorted.reduce((sum, item) => sum + (item.quantity ?? 0), 0).toLocaleString()}</span>
+          <span>総箱数: ${sorted.reduce((sum, item) => sum + (item.boxes ?? 0), 0).toLocaleString()}</span>
         </div>
-        ${boxTypeStatsData.length > 0 ? `
+        ${
+          boxTypeStatsData.length > 0
+            ? `
         <div class="box-stats">
           <div class="box-stats-title">📦 箱タイプ別集計:</div>
-          ${boxTypeStatsData.map(item => `
+          ${boxTypeStatsData
+            .map(
+              (item) => `
             <div class="box-stats-item">${item.box_type}: ${Number(item.total_boxes).toLocaleString()} 箱</div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
         <table>
           <thead>
             <tr>
@@ -396,7 +460,9 @@ const handlePrint = () => {
             </tr>
           </thead>
           <tbody>
-            ${sorted.map(item => `
+            ${sorted
+              .map(
+                (item) => `
               <tr>
                 <td>${item.product_cd}</td>
                 <td>${item.product_name ?? ''}</td>
@@ -404,10 +470,12 @@ const handlePrint = () => {
                 <td>${item.location_cd}</td>
                 <td style="text-align: right;">${(item.boxes ?? 0).toLocaleString()}</td>
                 <td style="text-align: right;">${(item.quantity ?? 0).toLocaleString()}</td>
-                <td style="text-align: right;">${(item.unit_per_box ?? '-')}</td>
+                <td style="text-align: right;">${item.unit_per_box ?? '-'}</td>
                 <td>${item.box_type ?? ''}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </body>
@@ -491,8 +559,8 @@ onMounted(() => {
   margin-top: 15px;
   padding: 10px;
   border-radius: 8px;
-  background: #FFF8F8;
-  border-left: 4px solid #F56C6C;
+  background: #fff8f8;
+  border-left: 4px solid #f56c6c;
   transition: all 0.3s ease;
 }
 
@@ -546,7 +614,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(to right, #67C23A, #409EFF, #E6A23C);
+  background: linear-gradient(to right, #67c23a, #409eff, #e6a23c);
 }
 
 .summary-title {
@@ -586,17 +654,17 @@ onMounted(() => {
   background-color: #fafafa;
 }
 
-.el-table__body tr:hover>td {
+.el-table__body tr:hover > td {
   background-color: #f0f7ff !important;
 }
 
 .quantity-highlight {
-  color: #409EFF;
+  color: #409eff;
   font-weight: 600;
 }
 
 .boxes-highlight {
-  color: #E6A23C;
+  color: #e6a23c;
   font-weight: 600;
 }
 
@@ -713,7 +781,7 @@ onMounted(() => {
 .box-stats-header h4 {
   margin: 0;
   font-size: 16px;
-  color: #409EFF;
+  color: #409eff;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -738,7 +806,7 @@ onMounted(() => {
   padding: 10px 15px;
   min-width: 120px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  border-left: 3px solid #409EFF;
+  border-left: 3px solid #409eff;
   transition: all 0.3s ease;
   flex: 0 0 auto;
 }
@@ -758,21 +826,21 @@ onMounted(() => {
 .box-count {
   font-size: 18px;
   font-weight: bold;
-  color: #409EFF;
+  color: #409eff;
 }
 
 .count-color {
-  color: #67C23A;
+  color: #67c23a;
   /* 绿色 */
 }
 
 .boxes-color {
-  color: #E6A23C;
+  color: #e6a23c;
   /* 橙色 */
 }
 
 .quantity-color {
-  color: #409EFF;
+  color: #409eff;
   /* 蓝色 */
 }
 </style>

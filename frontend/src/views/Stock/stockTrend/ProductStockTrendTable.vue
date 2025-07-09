@@ -11,24 +11,6 @@
           </div>
         </div>
       </div>
-      <div class="header-right">
-        <div class="view-switcher">
-          <el-radio-group v-model="viewMode" size="large">
-            <el-radio-button value="table">
-              <el-icon>
-                <Grid />
-              </el-icon>
-              表形式
-            </el-radio-button>
-            <el-radio-button value="chart">
-              <el-icon>
-                <TrendCharts />
-              </el-icon>
-              チャート
-            </el-radio-button>
-          </el-radio-group>
-        </div>
-      </div>
     </div>
 
     <!-- 筛选器面板 -->
@@ -41,13 +23,50 @@
           検索条件
         </div>
         <div class="filter-actions">
-          <el-button type="primary" @click="fetchData" :disabled="!validateForSearch()">
+          <el-button-group class="action-buttons">
+            <el-button
+              type="info"
+              @click="shippingDepletionVisible = true"
+              size="default"
+              class="depletion-btn"
+            >
+              <el-icon>
+                <TrendCharts />
+              </el-icon>
+              出荷枯渇予測
+            </el-button>
+            <el-button
+              type="danger"
+              @click="recalculateAllProducts"
+              :loading="loadingAll"
+              :disabled="!filters.location_cd || !filters.date_range?.length"
+              size="default"
+              class="recalc-all-btn"
+            >
+              <el-icon>
+                <Refresh />
+              </el-icon>
+              全製品再計算
+              <span class="btn-subtitle">（92日間）</span>
+            </el-button>
+          </el-button-group>
+          <el-button
+            type="primary"
+            @click="fetchData"
+            :disabled="!validateForSearch()"
+            class="search-btn"
+          >
             <el-icon>
               <Search />
             </el-icon>
             検索
           </el-button>
-          <el-button type="warning" @click="recalculateData" :disabled="!validateForRecalc()">
+          <el-button
+            type="warning"
+            @click="recalculateData"
+            :disabled="!validateForRecalc()"
+            class="recalc-btn"
+          >
             <el-icon>
               <Refresh />
             </el-icon>
@@ -67,8 +86,13 @@
                 </el-icon>
                 製品選択
               </label>
-              <el-input v-model="productText" placeholder="クリックして製品を選択..." readonly @click="dialogVisible = true"
-                class="product-selector">
+              <el-input
+                v-model="productText"
+                placeholder="クリックして製品を選択..."
+                readonly
+                @click="dialogVisible = true"
+                class="product-selector"
+              >
                 <template #suffix>
                   <el-icon class="cursor-pointer">
                     <ArrowDown />
@@ -87,8 +111,17 @@
                 </el-icon>
                 保管場所
               </label>
-              <el-select v-model="filters.location_cd" placeholder="選択してください" class="w-full">
-                <el-option v-for="loc in locationOptions" :key="loc.cd" :label="loc.name" :value="loc.cd">
+              <el-select
+                v-model="filters.location_cd"
+                placeholder="選択してください"
+                class="w-full"
+              >
+                <el-option
+                  v-for="loc in locationOptions"
+                  :key="loc.cd"
+                  :label="loc.name"
+                  :value="loc.cd"
+                >
                   <span>{{ loc.name }}</span>
                 </el-option>
               </el-select>
@@ -105,16 +138,16 @@
                 期間設定
               </label>
               <div class="date-range-container">
-                <el-date-picker v-model="filters.date_range" type="daterange" start-placeholder="開始日"
-                  end-placeholder="終了日" format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="date-picker"
-                  size="default" />
-                <div class="date-shortcuts">
-                  <el-button-group>
-                    <el-button size="small" @click="setRangeFromToday(7)">7日</el-button>
-                    <el-button size="small" @click="setRangeFromToday(14)">14日</el-button>
-                    <el-button size="small" @click="setRangeFromToday(30)">30日</el-button>
-                  </el-button-group>
-                </div>
+                <el-date-picker
+                  v-model="filters.date_range"
+                  type="daterange"
+                  start-placeholder="開始日"
+                  end-placeholder="終了日"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  class="date-picker"
+                  size="default"
+                />
               </div>
             </div>
           </el-col>
@@ -134,30 +167,6 @@
           </el-tag>
         </div>
       </div>
-
-      <div class="toolbar-right">
-        <el-button-group>
-          <el-button type="success" @click="exportToExcel" :disabled="!trendData.length">
-            <el-icon>
-              <Download />
-            </el-icon>
-            Excel出力
-          </el-button>
-          <el-button type="info" @click="shippingDepletionVisible = true">
-            <el-icon>
-              <TrendCharts />
-            </el-icon>
-            出荷枯渇予測
-          </el-button>
-          <el-button type="danger" @click="recalculateAllProducts" :loading="loadingAll"
-            :disabled="!filters.location_cd || !filters.date_range?.length">
-            <el-icon>
-              <Refresh />
-            </el-icon>
-            全製品再計算
-          </el-button>
-        </el-button-group>
-      </div>
     </div>
 
     <!-- 警告提示区域 -->
@@ -169,8 +178,14 @@
         <h4>在庫枯渇警告</h4>
       </div>
       <div class="alert-grid">
-        <el-alert v-for="alert in stockDepletionAlerts" :key="alert" type="error" :title="`枯渇予定: ${alert}`" show-icon
-          :closable="false" />
+        <el-alert
+          v-for="alert in stockDepletionAlerts"
+          :key="alert"
+          type="error"
+          :title="`枯渇予定: ${alert}`"
+          show-icon
+          :closable="false"
+        />
       </div>
     </div>
 
@@ -186,13 +201,36 @@
               </el-icon>
               在庫推移データ
             </div>
+            <div class="view-switcher">
+              <el-radio-group v-model="viewMode" size="default">
+                <el-radio-button value="table">
+                  <el-icon>
+                    <Grid />
+                  </el-icon>
+                  表形式
+                </el-radio-button>
+                <el-radio-button value="chart">
+                  <el-icon>
+                    <TrendCharts />
+                  </el-icon>
+                  チャート
+                </el-radio-button>
+              </el-radio-group>
+            </div>
           </div>
         </template>
 
         <div class="table-container">
-          <el-table :data="trendData" stripe border :row-class-name="getRowClass"
-            empty-text="データがありません。検索条件を設定して検索ボタンをクリックしてください。" table-layout="auto" class="trend-table">
-            <el-table-column label="日付" width="110" align="center" fixed>
+          <el-table
+            :data="trendData"
+            stripe
+            border
+            :row-class-name="getRowClass"
+            empty-text="データがありません。検索条件を設定して検索ボタンをクリックしてください。"
+            table-layout="auto"
+            class="trend-table"
+          >
+            <el-table-column label="日付" width="190" align="center" fixed>
               <template #default="{ row }">
                 <div class="date-cell">
                   <el-icon>
@@ -203,7 +241,7 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="製品情報" min-width="200" fixed>
+            <el-table-column label="製品情報" width="160" fixed>
               <template #default="{ row }">
                 <div class="product-cell">
                   <div class="product-code">{{ row.product_cd }}</div>
@@ -212,7 +250,18 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="入庫" width="100" align="right">
+            <el-table-column label="初期" width="80" align="right">
+              <template #default="{ row }">
+                <div class="number-cell initial">
+                  <el-icon v-if="row['初期'] > 0">
+                    <Star />
+                  </el-icon>
+                  {{ formatNumber(row['初期']) }}
+                </div>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="入庫" width="80" align="right">
               <template #default="{ row }">
                 <div class="number-cell positive">
                   <el-icon v-if="row['入庫'] > 0">
@@ -275,8 +324,13 @@
             <el-table-column label="差引累計" width="130" align="right">
               <template #default="{ row }">
                 <div class="cumulative-cell">
-                  <el-tag :type="row['差引累計'] < 0 ? 'danger' : row['差引累計'] === 0 ? 'warning' : 'success'" size="large"
-                    effect="dark">
+                  <el-tag
+                    :type="
+                      row['差引累計'] < 0 ? 'danger' : row['差引累計'] === 0 ? 'warning' : 'success'
+                    "
+                    size="large"
+                    effect="dark"
+                  >
                     {{ formatNumber(row['差引累計']) }}
                   </el-tag>
                 </div>
@@ -285,8 +339,18 @@
 
             <el-table-column label="状態" width="100" align="center">
               <template #default="{ row }">
-                <el-tag :type="row['差引累計'] < 0 ? 'danger' : row['差引累計'] < warningLevel ? 'warning' : 'success'"
-                  size="large" effect="dark" round>
+                <el-tag
+                  :type="
+                    row['差引累計'] < 0
+                      ? 'danger'
+                      : row['差引累計'] < warningLevel
+                        ? 'warning'
+                        : 'success'
+                  "
+                  size="large"
+                  effect="dark"
+                  round
+                >
                   <template #icon>
                     <el-icon v-if="row['差引累計'] < 0">
                       <CircleCloseFilled />
@@ -298,7 +362,10 @@
                       <CircleCheckFilled />
                     </el-icon>
                   </template>
-                  {{ row['差引累計'] < 0 ? '枯渇' : row['差引累計'] < warningLevel ? '警戒' : '正常' }} </el-tag>
+                  {{
+                    row['差引累計'] < 0 ? '枯渇' : row['差引累計'] < warningLevel ? '警戒' : '正常'
+                  }}
+                </el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -321,13 +388,28 @@
       </el-card>
 
       <!-- 空状态 -->
-      <el-empty v-if="!trendData.length && viewMode === 'table'" description="データがありません" class="empty-state">
+      <el-empty
+        v-if="!trendData.length && viewMode === 'table'"
+        description="データがありません"
+        class="empty-state"
+      >
         <template #image>
           <el-icon size="60">
             <DataBoard />
           </el-icon>
         </template>
-        <el-button type="primary" @click="fetchData" :disabled="!validateForSearch()">
+        <el-button
+          type="primary"
+          @click="
+            () => {
+              if (!validateForSearch()) {
+                ElMessage.warning('すべての検索条件を入力してください')
+                return
+              }
+              fetchData()
+            }
+          "
+        >
           検索を実行
         </el-button>
       </el-empty>
@@ -354,7 +436,6 @@ import {
   OfficeBuilding,
   Calendar,
   ArrowDown,
-  Download,
   WarningFilled,
   DataBoard,
   Plus,
@@ -362,13 +443,12 @@ import {
   Delete,
   Van,
   CircleCloseFilled,
-  CircleCheckFilled
+  CircleCheckFilled,
+  Star,
 } from '@element-plus/icons-vue'
 // 引入请求工具、图表组件、产品选择组件等
 import request from '@/utils/request'
 import StockTrendChart from './ProductStockTrendChart.vue'
-import * as XLSX from 'xlsx'
-import { saveAs } from 'file-saver'
 import ProductSelectDialog from '@/views/components/ProductSelectDialog.vue'
 import { getProductOptions } from '@/api/options'
 import ShippingDepletionDialog from './OrderDepletionDialog.vue'
@@ -407,46 +487,69 @@ const productText = ref('')
 
 // 处理产品选择后的回调
 const handleProductSelect = async (selectedCds: string[]) => {
-  const all = await getProductOptions()
-  selectedProducts.value = all.filter(opt => selectedCds.includes(opt.cd)).map(opt => ({ cd: opt.cd, name: opt.name }))
-  filters.value.product_cd_list = selectedProducts.value.map(p => p.cd)
-  productText.value = selectedProducts.value.map(p => `${p.cd}｜${p.name}`).join(', ')
-}
+  try {
+    // 如果没有选择任何产品，清空选择
+    if (!selectedCds || selectedCds.length === 0) {
+      selectedProducts.value = []
+      filters.value.product_cd_list = []
+      productText.value = ''
+      return
+    }
 
-// 移除已选择产品
-const removeProduct = (cd: string) => {
-  selectedProducts.value = selectedProducts.value.filter(p => p.cd !== cd)
-  filters.value.product_cd_list = selectedProducts.value.map(p => p.cd)
-  productText.value = selectedProducts.value.map(p => `${p.cd}｜${p.name}`).join(', ')
+    const all = await getProductOptions()
+    selectedProducts.value = all
+      .filter((opt) => selectedCds.includes(opt.cd))
+      .map((opt) => ({ cd: opt.cd, name: opt.name }))
+    filters.value.product_cd_list = selectedProducts.value.map((p) => p.cd)
+    productText.value = selectedProducts.value.map((p) => `${p.cd}｜${p.name}`).join(', ')
+  } catch (error) {
+    console.error('产品选择处理错误:', error)
+    ElMessage.error('製品選択の処理中にエラーが発生しました')
+  }
 }
 
 // 保管場所选项
-const locationOptions = ['製品倉庫', '仮設倉庫', '仕上倉庫', 'メッキ倉庫', '加工棟', '部品倉庫', 'その他'].map(cd => ({ cd, name: cd }))
+const locationOptions = [
+  '製品倉庫',
+  '仮設倉庫',
+  '仕上倉庫',
+  'メッキ倉庫',
+  '加工棟',
+  '部品倉庫',
+  'その他',
+].map((cd) => ({ cd, name: cd }))
+
+// 获取当月的日期范围（日本时区）
+function getCurrentMonthRange(): [string, string] {
+  // 使用日本时区
+  const japanTimeZone = 'Asia/Tokyo'
+  const now = new Date()
+
+  // 转换为日本时区
+  const japanTime = new Date(now.toLocaleString('en-US', { timeZone: japanTimeZone }))
+  const year = japanTime.getFullYear()
+  const month = japanTime.getMonth()
+
+  const startDate = new Date(year, month, 1)
+  const endDate = new Date(year, month + 1, 0)
+
+  // 格式化为YYYY-MM-DD格式
+  const format = (d: Date) => {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  return [format(startDate), format(endDate)]
+}
 
 // 查询条件初始值
 const filters = ref({
   product_cd_list: [] as string[],
   location_cd: '製品倉庫',
-  date_range: getDefaultRange()
+  date_range: getCurrentMonthRange(),
 })
-
-// 获取默认日期范围（今天到30天后）
-function getDefaultRange(): [string, string] {
-  const today = new Date()
-  const future = new Date()
-  future.setDate(today.getDate() + 30)
-  const format = (d: Date) => d.toISOString().slice(0, 10)
-  return [format(today), format(future)]
-}
-
-// 快捷设置日期范围
-function setRangeFromToday(days: number) {
-  const today = new Date()
-  const end = new Date()
-  end.setDate(today.getDate() + days)
-  const format = (d: Date) => d.toISOString().slice(0, 10)
-  filters.value.date_range = [format(today), format(end)]
-}
 
 // 在庫推移数据
 const trendData = ref<any[]>([])
@@ -474,21 +577,39 @@ const recalculateAllProducts = async () => {
     ElMessage.warning('保管場所・期間を指定してください')
     return
   }
+
+  // 计算新的结束日期：开始日期 + 92天
+  const startDate = new Date(date_range[0])
+  const endDate = new Date(startDate)
+  endDate.setDate(startDate.getDate() + 92)
+
+  // 格式化结束日期
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const calculatedEndDate = formatDate(endDate)
+
   try {
     loadingAll.value = true
     // 先清空表
     await request.post('/api/stock/clear-trends')
     ElMessage.success('在庫推移テーブルをクリアしました')
 
-    // 然后重新计算全部产品
+    // 然后重新计算全部产品（使用新的结束日期）
     await request.get('/api/stock/product-trend/all', {
       params: {
         location_cd,
         start_date: date_range[0],
-        end_date: date_range[1]
-      }
+        end_date: calculatedEndDate,
+      },
     })
-    ElMessage.success('全製品の在庫推移を再計算しました')
+    ElMessage.success(
+      `全製品の在庫推移を再計算しました（${date_range[0]} ～ ${calculatedEndDate}）`,
+    )
     if (filters.value.product_cd_list.length > 0) await fetchData()
   } catch (err: any) {
     ElMessage.error(err?.message || '全体再計算に失敗しました')
@@ -499,15 +620,18 @@ const recalculateAllProducts = async () => {
 
 // 单个产品在庫推移查询
 const fetchData = async () => {
-  if (!validateForSearch()) return
+  if (!validateForSearch()) {
+    ElMessage.warning('すべての検索条件を入力してください')
+    return
+  }
   try {
     const res = await request.get('/api/stock/daily-trends', {
       params: {
         product_cd: filters.value.product_cd_list[0],
         location_cd: filters.value.location_cd,
         start_date: filters.value.date_range[0],
-        end_date: filters.value.date_range[1]
-      }
+        end_date: filters.value.date_range[1],
+      },
     })
     trendData.value = res
   } catch (err: any) {
@@ -517,15 +641,18 @@ const fetchData = async () => {
 
 // 产品再计算
 const recalculateData = async () => {
-  if (!validateForRecalc()) return
+  if (!validateForRecalc()) {
+    ElMessage.warning('製品CD・保管場所・期間を指定してください')
+    return
+  }
   try {
     await request.get('/api/stock/product-trend', {
       params: {
         product_cd_list: filters.value.product_cd_list,
         location_cd: filters.value.location_cd,
         start_date: filters.value.date_range[0],
-        end_date: filters.value.date_range[1]
-      }
+        end_date: filters.value.date_range[1],
+      },
     })
     ElMessage.success('再計算完了（キャッシュ生成済み）')
     await fetchData()
@@ -538,7 +665,6 @@ const recalculateData = async () => {
 const validateForRecalc = () => {
   const { product_cd_list, location_cd, date_range } = filters.value
   if (!product_cd_list.length || !location_cd || date_range.length !== 2) {
-    ElMessage.warning('製品CD・保管場所・期間を指定してください')
     return false
   }
   return true
@@ -547,7 +673,6 @@ const validateForRecalc = () => {
 const validateForSearch = () => {
   const { product_cd_list, location_cd, date_range } = filters.value
   if (!product_cd_list.length || !location_cd || date_range.length !== 2) {
-    ElMessage.warning('すべての検索条件を入力してください')
     return false
   }
   return true
@@ -572,31 +697,6 @@ const getRowClass = ({ row }: { row: any }) => {
   if (firstDepletionDates.value[cd] === date) return 'danger-row'
   return ''
 }
-
-// 导出Excel
-const exportToExcel = () => {
-  if (!trendData.value.length) {
-    ElMessage.warning('出力データがありません')
-    return
-  }
-  const exportData = trendData.value.map(row => ({
-    日付: row.date,
-    製品CD: row.product_cd,
-    製品名: row.product_name,
-    入庫: row['入庫'],
-    出庫: row['出庫'],
-    調整: row['調整'],
-    廃棄: row['廃棄'],
-    保留: row['保留'],
-    出荷: row['出荷'],
-    差引累計: row['差引累計']
-  }))
-  const worksheet = XLSX.utils.json_to_sheet(exportData)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, '在庫推移')
-  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
-  saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'stock_trend.xlsx')
-}
 </script>
 
 <style scoped>
@@ -608,39 +708,26 @@ const exportToExcel = () => {
 /* ===== 页面整体样式 ===== */
 .stock-trend-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f8f9fa;
   padding: 24px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #212529;
 }
 
 /* ===== 页面标题区域 ===== */
 .page-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  border-radius: 12px;
   padding: 32px;
   margin-bottom: 24px;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(47, 150, 247, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.page-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  pointer-events: none;
-}
-
 .header-left {
-  position: relative;
-  z-index: 1;
+  flex: 1;
 }
 
 .page-title {
@@ -651,75 +738,153 @@ const exportToExcel = () => {
 }
 
 .title-icon {
-  font-size: 3rem;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  font-size: 2.5rem;
 }
 
 .title-content h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0;
   line-height: 1.2;
+  color: white;
 }
 
 .subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.1rem;
-  font-weight: 300;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  font-weight: 400;
   margin-top: 4px;
+  display: block;
 }
 
-.header-right {
-  position: relative;
-  z-index: 1;
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== 按钮美化样式 ===== */
+.depletion-btn {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3) !important;
+  transition: all 0.3s ease !important;
+  padding: 10px 18px !important;
+  color: white !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.depletion-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4) !important;
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%) !important;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(0, 123, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+  padding: 10px 20px !important;
+  color: white !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.search-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4) !important;
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
+}
+
+.search-btn:disabled {
+  background: #6c757d !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.6 !important;
+}
+
+.recalc-btn {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3) !important;
+  transition: all 0.3s ease !important;
+  padding: 10px 18px !important;
+  color: #212529 !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.recalc-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4) !important;
+  background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%) !important;
+}
+
+.recalc-btn:disabled {
+  background: #6c757d !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.6 !important;
+}
+
+/* ===== 视图切换器样式 ===== */
+.view-switcher {
+  display: flex;
+  align-items: center;
 }
 
 .view-switcher :deep(.el-radio-group) {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
   padding: 4px;
-  backdrop-filter: blur(10px);
+  border: 1px solid #e9ecef;
 }
 
 .view-switcher :deep(.el-radio-button__inner) {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
-  padding: 12px 20px;
-  border-radius: 8px;
+  color: #495057;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
 .view-switcher :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.9);
-  color: #667eea;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.view-switcher :deep(.el-radio-button__inner:hover) {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
 }
 
 /* ===== 筛选器面板 ===== */
 .filter-panel {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
 }
 
 .filter-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: #f8f9fa;
   padding: 20px 24px;
   border-bottom: 1px solid #e9ecef;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: 12px 12px 0 0;
 }
 
 .filter-title {
   margin: 0;
-  font-size: 1.3rem;
-  color: #495057;
+  font-size: 1.2rem;
+  color: #212529;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -728,7 +893,8 @@ const exportToExcel = () => {
 
 .filter-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  align-items: center;
 }
 
 .filter-content {
@@ -744,8 +910,8 @@ const exportToExcel = () => {
 
 .filter-label {
   font-weight: 600;
-  color: #495057;
-  font-size: 0.95rem;
+  color: #212529;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -753,11 +919,6 @@ const exportToExcel = () => {
 
 .product-selector {
   width: 100%;
-  transition: all 0.3s ease;
-}
-
-.product-selector:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .date-range-container {
@@ -770,35 +931,13 @@ const exportToExcel = () => {
   width: 100%;
 }
 
-.date-shortcuts {
-  display: flex;
-  justify-content: center;
-}
-
-.date-shortcuts :deep(.el-button-group .el-button) {
-  border-radius: 20px;
-  font-size: 0.85rem;
-  padding: 6px 16px;
-  border: 1px solid #d1ecf1;
-  background: #d1ecf1;
-  color: #0c5460;
-  transition: all 0.3s ease;
-}
-
-.date-shortcuts :deep(.el-button-group .el-button:hover) {
-  background: #bee5eb;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 /* ===== 操作工具栏 ===== */
 .toolbar {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
   padding: 20px 24px;
   display: flex;
   justify-content: space-between;
@@ -810,15 +949,10 @@ const exportToExcel = () => {
   align-items: center;
 }
 
-.toolbar-right {
-  display: flex;
-  align-items: center;
-}
-
 .data-stats :deep(.el-tag) {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
   font-weight: 600;
   padding: 8px 16px;
 }
@@ -826,8 +960,8 @@ const exportToExcel = () => {
 /* ===== 警告提示区域 ===== */
 .alert-section {
   background: #fff5f5;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
   padding: 20px 24px;
   border: 1px solid #fed7d7;
@@ -857,21 +991,16 @@ const exportToExcel = () => {
   gap: 12px;
 }
 
-.stock-alert {
-  border-radius: 8px;
-  border-left: 4px solid #e53e3e;
-}
-
 /* ===== 数据展示区域 ===== */
 .content-area {
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .table-card,
 .chart-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
 }
 
 .card-header {
@@ -881,8 +1010,8 @@ const exportToExcel = () => {
 }
 
 .card-title {
-  font-size: 1.4rem;
-  color: #495057;
+  font-size: 1.2rem;
+  color: #212529;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -890,9 +1019,14 @@ const exportToExcel = () => {
   margin: 0;
 }
 
-/* ===== 表格样式 ===== */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .table-container {
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -903,7 +1037,7 @@ const exportToExcel = () => {
 /* 表格单元格样式 */
 .date-cell {
   font-weight: 600;
-  color: #495057;
+  color: #212529;
   font-family: 'Courier New', monospace;
   display: flex;
   align-items: center;
@@ -919,13 +1053,13 @@ const exportToExcel = () => {
 
 .product-code {
   font-weight: 600;
-  color: #495057;
+  color: #212529;
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
 }
 
 .product-name {
-  color: #6c757d;
+  color: #495057;
   font-size: 0.85rem;
   line-height: 1.3;
 }
@@ -938,6 +1072,7 @@ const exportToExcel = () => {
   align-items: center;
   gap: 4px;
   justify-content: flex-end;
+  color: #212529;
 }
 
 .number-cell.positive {
@@ -946,6 +1081,10 @@ const exportToExcel = () => {
 
 .number-cell.negative {
   color: #dc3545;
+}
+
+.number-cell.initial {
+  color: #6f42c1;
 }
 
 .cumulative-cell {
@@ -965,7 +1104,7 @@ const exportToExcel = () => {
 
 :deep(.el-table th) {
   background-color: #f8f9fa !important;
-  color: #495057 !important;
+  color: #212529 !important;
   font-weight: 600 !important;
   border-bottom: 2px solid #dee2e6 !important;
 }
@@ -973,6 +1112,7 @@ const exportToExcel = () => {
 :deep(.el-table td) {
   border-bottom: 1px solid #f8f9fa !important;
   padding: 12px 8px !important;
+  color: #212529 !important;
 }
 
 :deep(.el-table__body tr:hover) {
@@ -980,13 +1120,13 @@ const exportToExcel = () => {
 }
 
 :deep(.el-table__fixed-column--left) {
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 /* ===== 空状态 ===== */
 .empty-state {
   padding: 80px 24px;
-  color: #6c757d;
+  color: #495057;
 }
 
 /* ===== 响应式设计 ===== */
@@ -997,9 +1137,14 @@ const exportToExcel = () => {
     text-align: center;
   }
 
-  .toolbar {
+  .filter-actions {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
   }
 }
 
@@ -1013,7 +1158,7 @@ const exportToExcel = () => {
   }
 
   .title-content h1 {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
 
   .filter-content {
@@ -1026,6 +1171,17 @@ const exportToExcel = () => {
     align-items: flex-start;
   }
 
+  .filter-actions {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
   .view-switcher {
     order: -1;
   }
@@ -1033,11 +1189,11 @@ const exportToExcel = () => {
 
 @media (max-width: 480px) {
   .title-content h1 {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
   }
 
   .title-icon {
-    font-size: 2.2rem;
+    font-size: 2rem;
   }
 
   .filter-title {
@@ -1045,84 +1201,77 @@ const exportToExcel = () => {
   }
 
   .card-title {
-    font-size: 1.2rem;
-  }
-}
-
-/* ===== 动画效果 ===== */
-.stock-trend-container * {
-  transition: all 0.3s ease;
-}
-
-.filter-panel,
-.content-area,
-.toolbar,
-.alert-section {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    font-size: 1.1rem;
   }
 }
 
 /* ===== Element Plus 组件样式覆盖 ===== */
 :deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #adb5bd;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 :deep(.el-select .el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 :deep(.el-date-editor) {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  border: 1px solid #ced4da;
 }
 
 :deep(.el-button) {
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  color: #212529;
 }
 
-:deep(.el-button:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+:deep(.el-button--primary) {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+:deep(.el-button--warning) {
+  background-color: #ffc107;
+  border-color: #ffc107;
+}
+
+:deep(.el-button--danger) {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+:deep(.el-button--info) {
+  background-color: #6c757d;
+  border-color: #6c757d;
 }
 
 :deep(.el-alert) {
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
 }
 
 :deep(.el-tag) {
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  font-weight: 600;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 :deep(.el-card) {
-  border: none;
+  border: 1px solid #e9ecef;
 }
 
 :deep(.el-card__header) {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+  color: #212529;
 }
 
 :deep(.w-full) {
@@ -1132,4 +1281,64 @@ const exportToExcel = () => {
 :deep(.cursor-pointer) {
   cursor: pointer;
 }
+
+.recalc-all-btn {
+  position: relative;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+  border: none !important;
+  box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3) !important;
+  transition: all 0.3s ease !important;
+  padding: 10px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important;
+  min-width: 120px !important;
+  color: white !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+.recalc-all-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4) !important;
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
+}
+
+.recalc-all-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3) !important;
+}
+
+.recalc-all-btn.is-loading {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3) !important;
+}
+
+.recalc-all-btn:disabled {
+  background: #6c757d !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.6 !important;
+}
+
+.btn-subtitle {
+  font-size: 0.7rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  margin-top: 1px !important;
+}
+
+/* ===== 确保所有文本都是黑色 ===== */
+/* .stock-trend-container,
+.stock-trend-container * {
+  color: #212529;
+}
+
+.stock-trend-container .el-input__inner,
+.stock-trend-container .el-select__placeholder,
+.stock-trend-container .el-date-editor__editor {
+  color: #212529 !important;
+} */
 </style>

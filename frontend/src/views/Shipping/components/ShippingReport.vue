@@ -58,6 +58,7 @@
             <tr>
               <th>出荷No</th>
               <th>製品名</th>
+              <th>製品種類</th>
               <th>箱タイプ</th>
               <th>受注数</th>
               <th>受注本数</th>
@@ -68,6 +69,7 @@
             <tr v-for="(item, itemIndex) in destGroup.items" :key="itemIndex">
               <td>{{ item.shipping_no }}</td>
               <td>{{ item.product_name }}</td>
+              <td>{{ item.product_type || '-' }}</td>
               <td>{{ item.box_type || '-' }}</td>
               <td>{{ item.quantity }}</td>
               <td>{{ item.units || '-' }}</td>
@@ -961,34 +963,34 @@ defineExpose({
 /* 表格列样式 */
 .report-table th:nth-child(1),
 .report-table td:nth-child(1) {
-  width: 20%;
+  width: 18%;
   font-family: 'Courier New', monospace;
   font-weight: 600;
 }
 
 .report-table th:nth-child(2),
 .report-table td:nth-child(2) {
-  width: 30%;
+  width: 25%;
   font-weight: 600;
 }
 
 .report-table th:nth-child(3),
 .report-table td:nth-child(3) {
-  width: 15%;
+  width: 12%;
   text-align: center;
   font-weight: 500;
 }
 
 .report-table th:nth-child(4),
 .report-table td:nth-child(4) {
-  width: 12%;
+  width: 13%;
   text-align: center;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .report-table th:nth-child(5),
 .report-table td:nth-child(5) {
-  width: 12%;
+  width: 11%;
   text-align: center;
   font-weight: 600;
 }
@@ -996,6 +998,13 @@ defineExpose({
 .report-table th:nth-child(6),
 .report-table td:nth-child(6) {
   width: 11%;
+  text-align: center;
+  font-weight: 600;
+}
+
+.report-table th:nth-child(7),
+.report-table td:nth-child(7) {
+  width: 10%;
   text-align: center;
 }
 
@@ -1358,34 +1367,34 @@ defineExpose({
   /* 表格列样式 */
   .report-table th:nth-child(1),
   .report-table td:nth-child(1) {
-    width: 20% !important;
+    width: 18% !important;
     font-family: 'Courier New', monospace !important;
     font-weight: 600 !important;
   }
 
   .report-table th:nth-child(2),
   .report-table td:nth-child(2) {
-    width: 30% !important;
+    width: 25% !important;
     font-weight: 600 !important;
   }
 
   .report-table th:nth-child(3),
   .report-table td:nth-child(3) {
-    width: 15% !important;
+    width: 12% !important;
     text-align: center !important;
     font-weight: 500 !important;
   }
 
   .report-table th:nth-child(4),
   .report-table td:nth-child(4) {
-    width: 12% !important;
+    width: 13% !important;
     text-align: center !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
   }
 
   .report-table th:nth-child(5),
   .report-table td:nth-child(5) {
-    width: 12% !important;
+    width: 11% !important;
     text-align: center !important;
     font-weight: 600 !important;
   }
@@ -1393,6 +1402,13 @@ defineExpose({
   .report-table th:nth-child(6),
   .report-table td:nth-child(6) {
     width: 11% !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+  }
+
+  .report-table th:nth-child(7),
+  .report-table td:nth-child(7) {
+    width: 10% !important;
     text-align: center !important;
   }
 }

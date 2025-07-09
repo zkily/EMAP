@@ -15,12 +15,12 @@
                 <Van />
               </el-icon>
             </div>
-            <span class="title-text">出荷一覧</span>
+            <span class="title-text">出荷構成表管理</span>
             <div class="title-badge">
               <span class="badge-text">{{ shippingList.length }}</span>
             </div>
           </h2>
-          <p class="subtitle">出荷情報の検索・管理が行えます</p>
+          <p class="subtitle">出荷構成表の検索・作成・編集・発行が行えます</p>
         </div>
         <div class="header-decoration">
           <div class="decoration-circle circle-1"></div>
@@ -292,7 +292,7 @@
               <el-icon>
                 <Plus />
               </el-icon>
-              出荷単作成
+              出荷構成表作成
             </el-button>
             <el-button
               type="warning"
@@ -328,16 +328,6 @@
                 <Download />
               </el-icon>
               ピッキング出力
-            </el-button>
-            <el-button
-              type="warning"
-              @click="openUnpickedDialog"
-              class="action-button unpicked-button"
-            >
-              <el-icon>
-                <Warning />
-              </el-icon>
-              未ピッキング検出
             </el-button>
           </div>
         </div>
@@ -546,7 +536,7 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right" key="actions">
+          <el-table-column label="操作" width="170" fixed="right" key="actions">
             <template #default="{ row }">
               <div class="action-buttons">
                 <el-tooltip content="編集" placement="top" :show-after="500">
@@ -696,12 +686,6 @@
       </template>
     </el-dialog>
 
-    <!-- 未ピッキング検出ダイアログ -->
-    <UnpickedOrdersDialog
-      v-model="unpickedDialogVisible"
-      :destinationOptions="destinationOptions"
-    />
-
     <!-- 列表示設定ダイアログ -->
     <el-dialog
       v-model="columnSelectVisible"
@@ -777,7 +761,6 @@ import request from '@/utils/request'
 import ShippingDetailDialog from './ShippingDetailDialog.vue'
 import ShippingCreateDialog from './ShippingCreateDialog.vue'
 import DestinationDragFilter from './components/DestinationDragFilter.vue'
-import UnpickedOrdersDialog from './components/UnpickedOrdersDialog.vue'
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import {
   Search,
@@ -864,7 +847,6 @@ const dateRange = ref<[string, string]>([today, today])
 const shippingList = ref<ShippingItem[]>([])
 const detailVisible = ref(false)
 const createDialogVisible = ref(false)
-const unpickedDialogVisible = ref(false)
 const selectedItem = ref<ShippingItem | null>(null)
 const selectedRows = ref<ShippingItem[]>([])
 const allSelectedIds = ref<Set<number>>(new Set()) // 跟踪所有选中项目的ID
@@ -1696,11 +1678,6 @@ function openCreateDialog(): void {
   createDialogVisible.value = true
 }
 
-// 未ピッキング検出ダイアログを開く
-function openUnpickedDialog(): void {
-  unpickedDialogVisible.value = true
-}
-
 // 出荷単作成完了処理
 function handleShippingCreated(): void {
   ElNotification({
@@ -2455,10 +2432,10 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 50%, #1e40af 100%);
   border-radius: 16px;
-  padding: 28px;
+  padding: 20px;
   box-shadow: 0 8px 32px rgba(30, 58, 138, 0.3);
   color: white;
   position: relative;
@@ -2642,7 +2619,7 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   animation-delay: 0.4s;
 }
 
@@ -2669,7 +2646,7 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .filter-card {
-  margin-bottom: 24px;
+  margin-bottom: 10px;
 }
 
 .filter-card-expanded {
@@ -2797,12 +2774,19 @@ async function exportPickingCSVData(): Promise<void> {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
   border-radius: 10px;
-  padding: 12px 24px;
-  font-weight: 700;
-  font-size: 14px;
+  padding: 14px 28px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.1);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .search-button:hover {
@@ -2859,12 +2843,19 @@ async function exportPickingCSVData(): Promise<void> {
   color: white;
   border: none;
   border-radius: 10px;
-  padding: 12px 24px;
-  font-weight: 700;
-  font-size: 14px;
+  padding: 14px 28px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(107, 114, 128, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.1);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .reset-button:hover {
@@ -3024,13 +3015,20 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .action-button {
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-weight: 600;
-  font-size: 12px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .action-button::before {
@@ -3046,6 +3044,11 @@ async function exportPickingCSVData(): Promise<void> {
 
 .action-button:hover::before {
   left: 100%;
+}
+
+.action-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  font-weight: 800;
 }
 
 .create-button {
@@ -3295,29 +3298,33 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .table-action-button {
-  border-radius: 4px;
-  font-size: 11px;
-  padding: 4px 8px !important;
-  height: 28px !important;
-  font-weight: 500;
+  border-radius: 6px;
+  font-size: 13px;
+  padding: 6px 5px !important;
+  height: 25px !important;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   min-width: 50px;
 }
 
 .table-action-button.icon-only {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
   padding: 0 !important;
   border-radius: 50% !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 16px;
 }
 
 .table-action-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 800;
 }
 
 .table-action-button.icon-only:hover {
@@ -3334,6 +3341,19 @@ async function exportPickingCSVData(): Promise<void> {
   --el-table-row-hover-bg-color: rgba(52, 152, 219, 0.05);
   --el-table-header-text-color: #2c3e50;
   font-size: 13px;
+}
+
+/* 按钮字体增强 */
+:deep(.el-button) {
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+:deep(.el-button span) {
+  font-weight: inherit;
+  letter-spacing: inherit;
 }
 
 :deep(.el-table .cell) {
@@ -3810,15 +3830,17 @@ async function exportPickingCSVData(): Promise<void> {
 }
 
 .date-btn {
-  font-size: 11px;
-  padding: 4px 6px;
-  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 6px 10px;
+  border-radius: 6px;
   transition: all 0.3s ease;
   border: 1px solid #dcdfe6;
   background: white;
   color: #606266;
-  min-width: 28px;
-  height: 28px;
+  min-width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3835,7 +3857,9 @@ async function exportPickingCSVData(): Promise<void> {
   background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
   border-color: #3498db;
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
 }
 
 .today-btn:hover {
@@ -3847,10 +3871,14 @@ async function exportPickingCSVData(): Promise<void> {
 
 /* 紧凑按钮样式 */
 .compact-btn {
-  font-size: 12px;
-  padding: 6px 12px;
-  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 8px 16px;
+  height: 36px;
   line-height: 1;
+  border-radius: 6px;
 }
 
 /* 納入先控制区域样式 */
@@ -3863,17 +3891,19 @@ async function exportPickingCSVData(): Promise<void> {
 .destination-select-button {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: 6px;
+  padding: 8px 12px;
   transition: all 0.3s ease;
-  font-size: 11px;
-  font-weight: 500;
-  height: 28px;
-  min-width: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  height: 36px;
+  min-width: 120px;
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
@@ -3916,16 +3946,18 @@ async function exportPickingCSVData(): Promise<void> {
 .group-manage-button {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: 6px;
+  padding: 8px 12px;
   transition: all 0.3s ease;
-  font-size: 11px;
-  font-weight: 500;
-  height: 28px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  height: 36px;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
@@ -4180,8 +4212,11 @@ async function exportPickingCSVData(): Promise<void> {
   }
 
   .action-button {
-    font-size: 12px;
-    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 10px 14px;
+    min-height: 38px;
   }
 }
 
@@ -4358,8 +4393,10 @@ async function exportPickingCSVData(): Promise<void> {
 
   .date-btn {
     flex: 1;
-    min-width: 60px;
-    height: 32px;
+    min-width: 70px;
+    height: 38px;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   /* 移动端納入先控制区域样式 */
@@ -4380,7 +4417,9 @@ async function exportPickingCSVData(): Promise<void> {
   .group-manage-button {
     width: 100% !important;
     justify-content: center;
-    height: 32px;
+    height: 36px;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   /* 移动端活跃分组显示 */
@@ -4465,8 +4504,11 @@ async function exportPickingCSVData(): Promise<void> {
   }
 
   .action-button {
-    font-size: 11px;
-    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 8px 12px;
+    min-height: 36px;
   }
 
   .pagination-container {
@@ -4498,20 +4540,26 @@ async function exportPickingCSVData(): Promise<void> {
   }
 
   .date-btn {
-    min-width: 50px;
-    height: 28px;
-    padding: 2px 4px;
+    min-width: 60px;
+    height: 34px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .compact-btn {
-    font-size: 11px;
-    padding: 4px 8px;
-    height: 28px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 6px 12px;
+    height: 34px;
   }
 
   .destination-select-button {
-    height: 28px;
-    font-size: 11px;
+    height: 36px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
   }
 }
 

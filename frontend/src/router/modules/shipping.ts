@@ -35,7 +35,7 @@ const shipping: RouteRecordRaw = {
       name: 'ShippingList',
       component: () => import('@/views/Shipping/ShippingList.vue'),
       meta: {
-        title: '出荷構成一覧',
+        title: '出荷構成表',
         group: '出荷管理',
         icon: ClipboardList,
         permission: 'shipping:view',
@@ -67,12 +67,24 @@ const shipping: RouteRecordRaw = {
       },
     },
     {
+      path: 'shipping-list',
+      name: 'ShippingListPage',
+      component: () => import('@/views/Shipping/ShippingListPage.vue'),
+      meta: {
+        title: '出荷品リスト',
+        group: '出荷管理',
+        icon: ListChecks,
+        permission: 'shipping:view',
+        roles: ['admin', 'manager', 'staff'],
+      },
+    },
+    {
       path: 'welding',
       name: 'WeldingShippingManager',
       component: () => import('@/views/Shipping/WeldingShippingManager.vue'),
       meta: {
         title: '溶接出荷管理',
-        group: '出荷管理',
+        group: 'その他管理',
         icon: Truck,
         permission: 'shipping:view',
         roles: ['admin', 'manager', 'staff'],

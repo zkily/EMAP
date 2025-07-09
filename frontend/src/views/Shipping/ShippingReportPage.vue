@@ -11,6 +11,12 @@
             <span class="header-title">出荷報告書</span>
           </div>
           <div class="header-actions">
+            <el-button type="info" :icon="Clock" @click="showPrintHistory = true">
+              印刷履歴
+            </el-button>
+            <el-button type="warning" :icon="Calendar" @click="showCalendarDialog = true">
+              営業報告カレンダー
+            </el-button>
             <el-button
               type="success"
               :icon="Document"
@@ -202,22 +208,41 @@
       storage-key="destination_groups_report"
       @groups-updated="handleGroupsUpdated"
     />
+
+    <!-- 打印履历弹窗 -->
+    <PrintHistoryDialog v-model="showPrintHistory" />
+
+    <!-- 日历打印弹窗 -->
+    <ShippingCalendarDialog v-model="showCalendarDialog" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Document, Search, Refresh, Location, Setting } from '@element-plus/icons-vue'
+import {
+  Document,
+  Search,
+  Refresh,
+  Location,
+  Setting,
+  Clock,
+  Calendar,
+} from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import ShippingReport from './components/ShippingReport.vue'
 import DestinationGroupManager from './components/DestinationGroupManager.vue'
+import PrintHistoryDialog from './components/PrintHistoryDialog.vue'
+import ShippingCalendarDialog from './components/ShippingCalendarDialog.vue'
+import { recordPrintHistory } from '@/api/shipping/printHistory'
 
 // 响应式数据
 const loading = ref(false)
 const reportDialogVisible = ref(false)
 const reportContent = ref(null)
 const showGroupManager = ref(false)
+const showPrintHistory = ref(false)
+const showCalendarDialog = ref(false)
 
 // 筛选条件
 const today = new Date().toISOString().slice(0, 10)
@@ -425,15 +450,19 @@ function handleReport() {
 }
 
 // 执行前端打印
-function executeFrontendPrint(contentRef) {
+async function executeFrontendPrint(contentRef) {
   if (!contentRef || !contentRef.innerHTML) {
     ElMessage.error('印刷内容の取得に失敗しました。')
+    // 记录打印失败
+    await recordPrintFailure('印刷内容の取得に失敗しました。')
     return
   }
 
   const printWindow = window.open('', '_blank')
   if (!printWindow) {
     ElMessage.error('ポップアップがブロックされました。ブラウザの設定を確認してください。')
+    // 记录打印失败
+    await recordPrintFailure('ポップアップがブロックされました。')
     return
   }
 
@@ -462,6 +491,8 @@ function executeFrontendPrint(contentRef) {
     printWindow.focus()
     printWindow.print()
     printWindow.close()
+    // 记录打印成功
+    recordPrintSuccess()
   }
 }
 
@@ -509,6 +540,47 @@ function handleGroupChange() {
     }
   }
   fetchOverviewData()
+}
+
+// 记录打印成功
+async function recordPrintSuccess() {
+  try {
+    await recordPrintHistory({
+      report_type: 'shipping_report',
+      report_title: '出荷報告書',
+      filters: {
+        dateRange: filters.dateRange,
+        destinationCds: filters.destinationCds,
+        selectedGroup: filters.selectedGroup,
+      },
+      record_count: overviewData.value?.length || 0,
+      status: '成功',
+    })
+    console.log('打印履历记录成功')
+  } catch (error) {
+    console.error('记录打印履历失败:', error)
+  }
+}
+
+// 记录打印失败
+async function recordPrintFailure(errorMessage) {
+  try {
+    await recordPrintHistory({
+      report_type: 'shipping_report',
+      report_title: '出荷報告書',
+      filters: {
+        dateRange: filters.dateRange,
+        destinationCds: filters.destinationCds,
+        selectedGroup: filters.selectedGroup,
+      },
+      record_count: overviewData.value?.length || 0,
+      status: '失败',
+      error_message: errorMessage,
+    })
+    console.log('打印失败履历记录成功')
+  } catch (error) {
+    console.error('记录打印失败履历失败:', error)
+  }
 }
 </script>
 

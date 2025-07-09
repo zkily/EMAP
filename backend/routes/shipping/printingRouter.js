@@ -122,6 +122,62 @@ router.post("/shipping-report", async (req, res) => {
   }
 });
 
+// 打印出荷便リスト
+router.post("/shipping-list", async (req, res) => {
+  try {
+    const { data, filters, printerName } = req.body;
+
+    // 生成HTML内容
+    const htmlContent = generateShippingListHTML(data, filters);
+
+    // 使用Puppeteer生成PDF
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      dumpio: true,
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+    // 设置打印选项
+    const pdfOptions = {
+      format: "A4",
+      landscape: true, // 横向
+      margin: {
+        top: "1cm",
+        right: "1cm",
+        bottom: "1cm",
+        left: "1cm",
+      },
+      printBackground: true,
+      preferCSSPageSize: true,
+    };
+
+    // 生成PDF
+    const pdfBuffer = await page.pdf(pdfOptions);
+    await browser.close();
+
+    // 如果指定了打印机，直接打印
+    if (printerName) {
+      const success = await printToPrinter(pdfBuffer, printerName, "shipping-list");
+      if (success) {
+        res.json({ success: true, message: "出荷便リスト打印成功" });
+      } else {
+        res.status(500).json({ success: false, message: "出荷便リスト打印失败" });
+      }
+    } else {
+      // 返回PDF供下载
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=shipping-list.pdf");
+      res.send(pdfBuffer);
+    }
+  } catch (error) {
+    console.error("打印出荷便リスト失败:", error);
+    res.status(500).json({ success: false, message: "出荷便リスト打印失败", error: error.message });
+  }
+});
+
 // 获取可用打印机列表
 router.get("/printers", async (req, res) => {
   try {
@@ -265,6 +321,101 @@ function generateShippingReportHTML(data, filters) {
           </div>
           <div class="header-center">
             <h1 class="report-title">出荷品報告書</h1>
+          </div>
+          <div class="header-right">
+            <span>印刷日時: ${printDateTime}</span>
+          </div>
+        </div>
+
+        <div class="report-body">
+          ${sectionsHTML}
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// 生成出荷便リストHTML
+function generateShippingListHTML(data, filters) {
+  const printDateTime = new Date().toLocaleString("ja-JP");
+  const dateRange = formatDateRange(filters.dateRange);
+
+  // 按納入先分组数据，并按出荷No排序
+  const groupedData = groupByDestinationForList(data);
+
+  let sectionsHTML = "";
+
+  groupedData.forEach((destGroup) => {
+    sectionsHTML += `
+      <div class="destination-section">
+        <h2 class="destination-title">${destGroup.destination_name}</h2>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>出荷No</th>
+              <th>製品名</th>
+              <th>製品種類</th>
+              <th>箱タイプ</th>
+              <th>受注数</th>
+              <th>受注本数</th>
+              <th>納入日</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${destGroup.items
+              .map(
+                (item) => `
+              <tr>
+                <td class="no-column">${item.no}</td>
+                <td>${item.shipping_no}</td>
+                <td>${item.product_name}</td>
+                <td>${item.product_type || "-"}</td>
+                <td>${item.box_type || "-"}</td>
+                <td>${item.quantity}</td>
+                <td>${item.units || "-"}</td>
+                <td>${formatDate(item.delivery_date)}</td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+
+        <div class="destination-summary">
+          <table class="summary-table">
+            <tr>
+              <td class="summary-label">${destGroup.destination_name} 合計</td>
+              <td class="summary-value">受注箱数: ${destGroup.totalQuantity}</td>
+              <td class="summary-value">受注本数: ${destGroup.totalUnits}</td>
+              <td class="summary-value">出荷パレ数: ${destGroup.shippingNoCount}</td>
+            </tr>
+          </table>
+          <div class="separator-line"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>出荷便リスト</title>
+      <style>
+        ${getShippingListCSS()}
+      </style>
+    </head>
+    <body>
+      <div class="shipping-list">
+        <div class="report-header">
+          <div class="header-left">
+            <span>出荷日: ${dateRange}</span>
+          </div>
+          <div class="header-center">
+            <h1 class="report-title">出荷便リスト</h1>
           </div>
           <div class="header-right">
             <span>印刷日時: ${printDateTime}</span>
@@ -575,6 +726,142 @@ function getShippingReportCSS() {
   `;
 }
 
+// 获取出荷便リストCSS样式
+function getShippingListCSS() {
+  return `
+    @page {
+      size: A4 landscape;
+      margin: 1cm;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    .shipping-list {
+      font-family: 'Arial', 'MS Gothic', sans-serif;
+      color: #000;
+      background: #fff;
+      line-height: 1.4;
+      font-size: 12px;
+      width: 100%;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      font-size: 12px;
+      background: #f5f5f5;
+    }
+
+    .header-left,
+    .header-right {
+      flex: 1;
+      padding: 0 10px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .header-center {
+      flex: 2;
+      text-align: center;
+      padding: 0 15px;
+    }
+
+    .report-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0;
+      color: #000;
+    }
+
+    .destination-section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+      background: #fff;
+      border: 1px solid #000;
+    }
+
+    .destination-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 0;
+      padding: 10px 15px;
+      background: #e0e0e0;
+      color: #000;
+      border-bottom: 1px solid #000;
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    .report-table th {
+      background: #f0f0f0;
+      color: #000;
+      font-weight: bold;
+      font-size: 11px;
+      border: 1px solid #000;
+      padding: 6px 4px;
+      text-align: center;
+    }
+
+    .report-table td {
+      border: 1px solid #000;
+      padding: 4px;
+      font-size: 10px;
+      text-align: left;
+      vertical-align: middle;
+      background: #fff;
+    }
+
+    .report-table tbody tr:nth-child(even) td {
+      background: #f9f9f9;
+    }
+
+    .no-column {
+      width: 40px;
+      text-align: center !important;
+    }
+
+    .destination-summary {
+      margin: 0;
+      padding: 8px 15px;
+      background: #f5f5f5;
+      border-top: 1px solid #000;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 4px 6px;
+      font-weight: bold;
+      font-size: 11px;
+      border: none;
+      background: transparent;
+      color: #000;
+    }
+
+    .separator-line {
+      width: 100%;
+      height: 2px;
+      background: #000;
+      margin-top: 6px;
+    }
+  `;
+}
+
 // 辅助函数
 function groupByShippingDate(data) {
   const dateMap = new Map();
@@ -617,6 +904,48 @@ function groupByDestination(data) {
   const result = [];
   destMap.forEach((items, destination_name) => {
     const sortedItems = items.sort((a, b) => a.product_name.localeCompare(b.product_name));
+    const totalQuantity = sortedItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const totalUnits = sortedItems.reduce((sum, item) => sum + (Number(item.units) || 0), 0);
+    const uniqueShippingNos = new Set(sortedItems.map((item) => item.shipping_no));
+    const shippingNoCount = uniqueShippingNos.size;
+
+    result.push({
+      destination_name,
+      items: sortedItems,
+      totalQuantity,
+      totalUnits,
+      shippingNoCount,
+    });
+  });
+
+  return result.sort((a, b) => a.destination_name.localeCompare(b.destination_name));
+}
+
+function groupByDestinationForList(data) {
+  const destMap = new Map();
+
+  data.forEach((item) => {
+    const destName = item.destination_name;
+    if (!destMap.has(destName)) {
+      destMap.set(destName, []);
+    }
+    destMap.get(destName).push(item);
+  });
+
+  const result = [];
+  destMap.forEach((items, destination_name) => {
+    // 按出荷No排序
+    const sortedItems = items.sort((a, b) => {
+      const aNo = a.shipping_no || "";
+      const bNo = b.shipping_no || "";
+      return aNo.localeCompare(bNo);
+    });
+    
+    // 添加序号
+    sortedItems.forEach((item, index) => {
+      item.no = index + 1;
+    });
+    
     const totalQuantity = sortedItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     const totalUnits = sortedItems.reduce((sum, item) => sum + (Number(item.units) || 0), 0);
     const uniqueShippingNos = new Set(sortedItems.map((item) => item.shipping_no));

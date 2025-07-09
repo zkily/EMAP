@@ -131,6 +131,7 @@
                 <el-select v-model="form.box_type" placeholder="選択">
                   <el-option label="小箱" value="小箱" />
                   <el-option label="大箱" value="大箱" />
+                  <el-option label="TP箱" value="TP箱" />
                   <el-option label="段ボール" value="段ボール" />
                   <el-option label="加工箱" value="加工箱" />
                   <el-option label="特殊箱" value="特殊箱" />

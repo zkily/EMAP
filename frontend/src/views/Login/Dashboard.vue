@@ -37,17 +37,12 @@
         <el-card class="stat-card processing-card">
           <div class="stat-icon">
             <el-icon>
-              <TrendCharts />
+              <Box />
             </el-icon>
           </div>
           <div class="stat-content">
-            <el-statistic title="今日の処理件数" :value="todayProcessed" />
-            <div class="stat-trend positive">
-              <el-icon>
-                <ArrowUp />
-              </el-icon>
-              <span>+12%</span>
-            </div>
+            <el-statistic title="今日の未ピッキング数" :value="todayOverview.pending_today" />
+            <div class="stat-badge pending">進行中</div>
           </div>
         </el-card>
       </el-col>
@@ -122,8 +117,12 @@
       </template>
 
       <div class="recommendations-grid">
-        <div v-for="item in recommendations" :key="item.id" class="recommendation-item"
-          @click="handleRecommendationClick(item)">
+        <div
+          v-for="item in recommendations"
+          :key="item.id"
+          class="recommendation-item"
+          @click="handleRecommendationClick(item)"
+        >
           <div class="recommendation-icon" :style="{ backgroundColor: item.color }">
             <el-icon>
               <component :is="item.icon" />
@@ -155,8 +154,12 @@
       </template>
 
       <div class="quick-actions-grid">
-        <div v-for="action in quickActions" :key="action.id" class="quick-action-item"
-          @click="handleQuickAction(action)">
+        <div
+          v-for="action in quickActions"
+          :key="action.id"
+          class="quick-action-item"
+          @click="handleQuickAction(action)"
+        >
           <div class="action-icon" :class="action.iconClass">
             <el-icon>
               <component :is="action.icon" />
@@ -199,7 +202,12 @@
               <span>ログなし</span>
             </div>
             <div v-else>
-              <div v-for="log in logs" :key="log.id" class="log-entry" :class="getLogLevelClass(log.level)">
+              <div
+                v-for="log in logs"
+                :key="log.id"
+                class="log-entry"
+                :class="getLogLevelClass(log.level)"
+              >
                 <div class="log-indicator" :class="getLogLevelClass(log.level)"></div>
                 <span class="log-time">{{ formatLogTime(log.log_time) }}</span>
                 <span class="log-level">{{ log.level.toUpperCase() }}</span>
@@ -234,8 +242,12 @@
             <span>新しい通知はありません</span>
           </div>
           <div v-else class="notification-list">
-            <div v-for="notification in notifications" :key="notification.id" class="notification-item"
-              :class="{ 'unread': !notification.read }">
+            <div
+              v-for="notification in notifications"
+              :key="notification.id"
+              class="notification-item"
+              :class="{ unread: !notification.read }"
+            >
               <div class="notification-avatar">
                 <el-icon>
                   <Bell />
@@ -244,9 +256,16 @@
               <div class="notification-content">
                 <h4>{{ notification.title }}</h4>
                 <p>{{ notification.message }}</p>
-                <span class="notification-time">{{ formatNotificationTime(notification.created_at) }}</span>
+                <span class="notification-time">{{
+                  formatNotificationTime(notification.created_at)
+                }}</span>
               </div>
-              <el-button v-if="!notification.read" size="small" type="primary" @click="markAsRead(notification.id)">
+              <el-button
+                v-if="!notification.read"
+                size="small"
+                type="primary"
+                @click="markAsRead(notification.id)"
+              >
                 既読
               </el-button>
             </div>
@@ -312,11 +331,12 @@ import {
   Tools,
   Notification,
   Management,
-  Download
+  Download,
+  Box,
 } from '@element-plus/icons-vue'
 
 defineOptions({
-  name: 'ダッシュボード'
+  name: 'ダッシュボード',
 })
 
 interface LogEntry {
@@ -361,6 +381,13 @@ interface Activity {
   description: string
 }
 
+interface TodayOverview {
+  total_today: number
+  pending_today: number
+  completed_today: number
+  today_completion_rate: number
+}
+
 const store = useMainStore()
 const today = dayjs().format('YYYY年MM月DD日(ddd)')
 const weather = '晴れ'
@@ -376,6 +403,14 @@ const pendingTasks = ref(8)
 const systemLoad = ref(45)
 const systemUptime = ref(127)
 
+// ピッキング統計データ
+const todayOverview = ref<TodayOverview>({
+  total_today: 0,
+  pending_today: 0,
+  completed_today: 0,
+  today_completion_rate: 0,
+})
+
 // 推荐功能数据
 const recommendations = ref<Recommendation[]>([
   {
@@ -387,7 +422,7 @@ const recommendations = ref<Recommendation[]>([
     priority: 'info',
     priorityText: '推奨',
     estimatedTime: '5分',
-    action: 'backup'
+    action: 'backup',
   },
   {
     id: 2,
@@ -398,7 +433,7 @@ const recommendations = ref<Recommendation[]>([
     priority: 'success',
     priorityText: '効果的',
     estimatedTime: '10分',
-    action: 'optimize'
+    action: 'optimize',
   },
   {
     id: 3,
@@ -409,8 +444,8 @@ const recommendations = ref<Recommendation[]>([
     priority: 'warning',
     priorityText: '重要',
     estimatedTime: '15分',
-    action: 'security'
-  }
+    action: 'security',
+  },
 ])
 
 // 快速操作数据
@@ -420,7 +455,13 @@ const quickActions = ref<QuickAction[]>([
   { id: 3, label: 'ファイル', icon: 'Files', iconClass: 'files-icon', action: 'files' },
   { id: 4, label: '接続', icon: 'Connection', iconClass: 'connection-icon', action: 'connections' },
   { id: 5, label: 'ツール', icon: 'Tools', iconClass: 'tools-icon', action: 'tools' },
-  { id: 6, label: '通知', icon: 'Notification', iconClass: 'notification-icon', action: 'notifications' }
+  {
+    id: 6,
+    label: '通知',
+    icon: 'Notification',
+    iconClass: 'notification-icon',
+    action: 'notifications',
+  },
 ])
 
 // 今日的活动数据
@@ -429,26 +470,26 @@ const todayActivities = ref<Activity[]>([
     id: 1,
     time: '09:15',
     title: 'システム起動',
-    description: 'Smart-EMAPシステムが正常に起動しました'
+    description: 'Smart-EMAPシステムが正常に起動しました',
   },
   {
     id: 2,
     time: '10:30',
     title: 'データ同期完了',
-    description: '外部システムとのデータ同期が完了しました'
+    description: '外部システムとのデータ同期が完了しました',
   },
   {
     id: 3,
     time: '14:20',
     title: '定期バックアップ',
-    description: 'スケジュールされたバックアップが実行されました'
+    description: 'スケジュールされたバックアップが実行されました',
   },
   {
     id: 4,
     time: '16:45',
     title: 'ユーザーログイン',
-    description: '新しいユーザーがシステムにログインしました'
-  }
+    description: '新しいユーザーがシステムにログインしました',
+  },
 ])
 
 // 用户信息
@@ -462,7 +503,7 @@ const lastLoginTime = computed(() => {
 })
 
 const unreadNotifications = computed(() => {
-  return notifications.value.filter(n => !n.read).length
+  return notifications.value.filter((n) => !n.read).length
 })
 
 // 获取日志
@@ -476,10 +517,30 @@ const fetchLogs = async () => {
     // 模拟数据
     logs.value = [
       { id: 1, log_time: new Date().toISOString(), message: 'システム正常起動', level: 'info' },
-      { id: 2, log_time: new Date(Date.now() - 60000).toISOString(), message: 'データベース接続確認', level: 'info' },
-      { id: 3, log_time: new Date(Date.now() - 120000).toISOString(), message: 'バックアップ完了', level: 'info' },
-      { id: 4, log_time: new Date(Date.now() - 180000).toISOString(), message: 'パフォーマンス警告', level: 'warning' },
-      { id: 5, log_time: new Date(Date.now() - 240000).toISOString(), message: 'ユーザー認証成功', level: 'info' }
+      {
+        id: 2,
+        log_time: new Date(Date.now() - 60000).toISOString(),
+        message: 'データベース接続確認',
+        level: 'info',
+      },
+      {
+        id: 3,
+        log_time: new Date(Date.now() - 120000).toISOString(),
+        message: 'バックアップ完了',
+        level: 'info',
+      },
+      {
+        id: 4,
+        log_time: new Date(Date.now() - 180000).toISOString(),
+        message: 'パフォーマンス警告',
+        level: 'warning',
+      },
+      {
+        id: 5,
+        log_time: new Date(Date.now() - 240000).toISOString(),
+        message: 'ユーザー認証成功',
+        level: 'info',
+      },
     ]
   } finally {
     logsLoading.value = false
@@ -506,22 +567,22 @@ const fetchNotifications = async () => {
         title: 'システムメンテナンス',
         message: '明日の深夜にシステムメンテナンスを実施します',
         read: false,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       },
       {
         id: 2,
         title: '新機能リリース',
         message: '製品管理機能が追加されました',
         read: true,
-        created_at: new Date(Date.now() - 86400000).toISOString()
+        created_at: new Date(Date.now() - 86400000).toISOString(),
       },
       {
         id: 3,
         title: 'セキュリティアップデート',
         message: 'システムのセキュリティパッチが適用されました',
         read: false,
-        created_at: new Date(Date.now() - 3600000).toISOString()
-      }
+        created_at: new Date(Date.now() - 3600000).toISOString(),
+      },
     ]
   }
 }
@@ -549,7 +610,7 @@ const handleQuickAction = (action: QuickAction) => {
 
 // 标记为已读
 const markAsRead = (id: number) => {
-  const notification = notifications.value.find(n => n.id === id)
+  const notification = notifications.value.find((n) => n.id === id)
   if (notification) {
     notification.read = true
     ElMessage.success('通知を既読にしました')
@@ -557,7 +618,7 @@ const markAsRead = (id: number) => {
 }
 
 const markAllAsRead = () => {
-  notifications.value.forEach(n => n.read = true)
+  notifications.value.forEach((n) => (n.read = true))
   ElMessage.success('すべての通知を既読にしました')
 }
 
@@ -576,9 +637,50 @@ const getLogLevelClass = (level: string) => {
     error: 'log-error',
     warning: 'log-warning',
     info: 'log-info',
-    debug: 'log-debug'
+    debug: 'log-debug',
   }
   return classes[level] || 'log-info'
+}
+
+// 获取ピッキング数据
+const fetchPickingData = async () => {
+  try {
+    const response = await request.get('/api/shipping/picking/new-progress')
+
+    // 检查响应格式 - 处理不同的响应格式
+    let responseData
+    if (response && response.success !== undefined) {
+      if (!response.success) {
+        console.error('API请求失败:', response.message)
+        return
+      }
+      responseData = response.data
+    } else if (response && typeof response === 'object' && response.todayOverview) {
+      responseData = response
+    } else {
+      console.error('未知的响应格式:', response)
+      return
+    }
+
+    // 更新ピッキング统计数据
+    if (responseData && responseData.todayOverview) {
+      todayOverview.value = {
+        total_today: responseData.todayOverview.total_today || 0,
+        pending_today: responseData.todayOverview.pending_today || 0,
+        completed_today: responseData.todayOverview.completed_today || 0,
+        today_completion_rate: responseData.todayOverview.today_completion_rate || 0,
+      }
+    }
+  } catch (error) {
+    console.error('ピッキングデータ取得エラー:', error)
+    // 使用默认数据
+    todayOverview.value = {
+      total_today: 45,
+      pending_today: 12,
+      completed_today: 33,
+      today_completion_rate: 73,
+    }
+  }
 }
 
 // 更新统计数据
@@ -593,6 +695,7 @@ const updateStats = () => {
 onMounted(() => {
   fetchLogs()
   fetchNotifications()
+  fetchPickingData()
   updateStats()
 
   // 记录当前登录时间
@@ -608,7 +711,14 @@ onMounted(() => {
   padding: 24px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: calc(100vh - 60px);
-  font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    'Noto Sans JP',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }
 
 /* 欢迎卡片 */
@@ -755,6 +865,20 @@ onMounted(() => {
 
 .stat-trend.neutral {
   color: #909399;
+}
+
+.stat-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+}
+
+.stat-badge.pending {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
 }
 
 /* 推荐功能卡片 */

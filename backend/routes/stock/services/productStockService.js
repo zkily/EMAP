@@ -35,6 +35,12 @@ export async function recalculateAndCheckProductStockLogic() {
   ON t1.product_cd = t2.product_cd
   AND t1.location_cd = t2.location_cd
   AND t1.snapshot_date = t2.max_date
+  -- 排除产品名包含"加工"或"アーチ"的产品
+  WHERE NOT EXISTS (
+    SELECT 1 FROM products p
+    WHERE p.product_cd = t1.product_cd
+    AND (p.product_name LIKE '%加工%' OR p.product_name LIKE '%アーチ%')
+  )
 `);
 
   for (const snap of snapshots) {
@@ -52,11 +58,17 @@ export async function recalculateAndCheckProductStockLogic() {
           ELSE 0
         END
       ), 0) AS delta_qty
-      FROM stock_transaction_logs
-      WHERE stock_type = '製品'
-        AND target_cd = ?
-        AND location_cd = ?
-        AND DATE(transaction_time) > ?
+      FROM stock_transaction_logs stl
+      WHERE stl.stock_type = '製品'
+        AND stl.target_cd = ?
+        AND stl.location_cd = ?
+        AND DATE(stl.transaction_time) > ?
+        -- 排除产品名包含"加工"或"アーチ"的产品
+        AND NOT EXISTS (
+          SELECT 1 FROM products p
+          WHERE p.product_cd = stl.target_cd
+          AND (p.product_name LIKE '%加工%' OR p.product_name LIKE '%アーチ%')
+        )
       `,
       [snap.product_cd, snap.location_cd, snap.snapshot_date],
     );
@@ -89,17 +101,23 @@ export async function recalculateAndCheckProductStockLogic() {
           ELSE 0
         END
       ) AS total_quantity
-    FROM stock_transaction_logs
-    WHERE stock_type = '製品'
+    FROM stock_transaction_logs stl
+    WHERE stl.stock_type = '製品'
       AND NOT EXISTS (
         SELECT 1 FROM stock_product_snapshots s
-        WHERE s.product_cd = stock_transaction_logs.target_cd
-          AND s.location_cd = stock_transaction_logs.location_cd
+        WHERE s.product_cd = stl.target_cd
+          AND s.location_cd = stl.location_cd
       )
       AND NOT EXISTS (
         SELECT 1 FROM stock_products p
-        WHERE p.product_cd = stock_transaction_logs.target_cd
-        AND p.location_cd = stock_transaction_logs.location_cd
+        WHERE p.product_cd = stl.target_cd
+        AND p.location_cd = stl.location_cd
+      )
+      -- 排除产品名包含"加工"或"アーチ"的产品
+      AND NOT EXISTS (
+        SELECT 1 FROM products p
+        WHERE p.product_cd = stl.target_cd
+        AND (p.product_name LIKE '%加工%' OR p.product_name LIKE '%アーチ%')
       )
     GROUP BY target_cd, location_cd
     HAVING total_quantity != 0
@@ -114,18 +132,20 @@ export async function recalculateAndCheckProductStockLogic() {
     updatedCount++;
   }
 
-  // 3. 异常检测
+  // 3. 异常检测 - 排除产品名包含"加工"或"アーチ"的产品
   const [negativeStock] = await db.query(`
     SELECT s.product_cd, p.product_name, s.location_cd, s.quantity
     FROM stock_products s
     LEFT JOIN products p ON s.product_cd = p.product_cd
     WHERE s.quantity < 0
+      AND (p.product_name IS NULL OR (p.product_name NOT LIKE '%加工%' AND p.product_name NOT LIKE '%アーチ%'))
   `);
 
   const [multiLocations] = await db.query(`
     SELECT s.product_cd, p.product_name, COUNT(DISTINCT s.location_cd) AS location_count
     FROM stock_products s
     LEFT JOIN products p ON s.product_cd = p.product_cd
+    WHERE (p.product_name IS NULL OR (p.product_name NOT LIKE '%加工%' AND p.product_name NOT LIKE '%アーチ%'))
     GROUP BY s.product_cd
     HAVING location_count > 1
   `);
@@ -148,10 +168,11 @@ export async function recalculateAndCheckProductStockLogic() {
     FROM stock_products sp
     LEFT JOIN products p ON sp.product_cd = p.product_cd
     LEFT JOIN delivery_destinations d ON p.delivery_destination_cd = d.destination_cd
+    WHERE (p.product_name IS NULL OR (p.product_name NOT LIKE '%加工%' AND p.product_name NOT LIKE '%アーチ%'))
     ORDER BY sp.product_cd, sp.location_cd
   `);
 
-  // 统计各种箱型数量
+  // 统计各种箱型数量 - 排除产品名包含"加工"或"アーチ"的产品
   const [boxTypeStats] = await db.query(`
     SELECT
       p.box_type,
@@ -159,6 +180,7 @@ export async function recalculateAndCheckProductStockLogic() {
     FROM stock_products sp
     LEFT JOIN products p ON sp.product_cd = p.product_cd
     WHERE p.box_type IS NOT NULL AND p.box_type != ''
+      AND (p.product_name IS NULL OR (p.product_name NOT LIKE '%加工%' AND p.product_name NOT LIKE '%アーチ%'))
     GROUP BY p.box_type
     ORDER BY total_boxes DESC
   `);

@@ -41,7 +41,10 @@ router.get("/carrier-options", async (req, res) => {
 router.get("/product-options", async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT product_cd, product_name, lot_size FROM products ORDER BY product_name`,
+      `SELECT product_cd, product_name, lot_size FROM products
+       WHERE product_name NOT LIKE '%加工%'
+         AND product_name NOT LIKE '%アーチ%'
+       ORDER BY product_name`,
     );
     res.json({
       success: true,

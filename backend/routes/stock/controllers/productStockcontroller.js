@@ -108,8 +108,31 @@ export const getProductStockTrend = async (req, res) => {
   };
 
   const originalProductList = Array.isArray(product_cd_list) ? product_cd_list : [product_cd_list];
-  // 转换产品代码
-  const productList = [...new Set(originalProductList.map(convertProductCode))];
+  let productList = [...new Set(originalProductList.map(convertProductCode))];
+
+  // 过滤掉名称包含"加工"或"アーチ"的产品
+  if (productList.length) {
+    const [nameRows] = await db.query(
+      `SELECT CONCAT(LEFT(product_cd, LENGTH(product_cd)-1), '1') AS base_cd, product_name
+       FROM products
+       WHERE CONCAT(LEFT(product_cd, LENGTH(product_cd)-1), '1') IN (${productList
+         .map(() => "?")
+         .join(",")})`,
+      productList,
+    );
+    const invalidCds = nameRows
+      .filter(
+        (r) =>
+          r.product_name && (r.product_name.includes("加工") || r.product_name.includes("アーチ")),
+      )
+      .map((r) => r.base_cd);
+    if (invalidCds.length) {
+      productList = productList.filter((cd) => !invalidCds.includes(cd));
+      if (productList.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+    }
+  }
 
   try {
     // 获取每个产品的最后一个初期数据（合并后的）
@@ -252,6 +275,7 @@ export const getProductStockTrend = async (req, res) => {
       const key = `${flow.product_cd}_${flow.date}`;
       if (!stockFlowMap[key]) {
         stockFlowMap[key] = {
+          初期: 0,
           入庫: 0,
           出庫: 0,
           調整: 0,
@@ -320,11 +344,19 @@ export const getProductStockTrend = async (req, res) => {
       const dateRange = dateRangeMap[product_cd].dates;
       const lastConfirmedDate = lastConfirmedMap[product_cd] || null;
 
+      // 从快照表的初期值开始累计
       let cumulative = initial_quantity;
 
       for (const date of dateRange) {
         const stockKey = `${product_cd}_${date}`;
-        const stock = stockFlowMap[stockKey] || { 入庫: 0, 出庫: 0, 調整: 0, 廃棄: 0, 保留: 0 };
+        const stock = stockFlowMap[stockKey] || {
+          初期: 0,
+          入庫: 0,
+          出庫: 0,
+          調整: 0,
+          廃棄: 0,
+          保留: 0,
+        };
         const order = shipmentMap[stockKey] || { confirmed: 0, forecast: 0 };
 
         // 确定使用确认订单还是预测订单
@@ -339,9 +371,13 @@ export const getProductStockTrend = async (req, res) => {
           is_predicted = true;
         }
 
+        // 从stock_transaction_logs获取当天的初期值
+        const 初期値 = Number(stock.初期 || 0);
+
         // 使用新的计算公式计算差引累計
         cumulative =
           cumulative +
+          初期値 +
           Number(stock.入庫 || 0) +
           Number(stock.調整 || 0) -
           Number(stock.出庫 || 0) -
@@ -354,6 +390,7 @@ export const getProductStockTrend = async (req, res) => {
           product_name,
           location_cd,
           date,
+          初期: 初期値,
           入庫: Number(stock.入庫 || 0),
           出庫: Number(stock.出庫 || 0),
           調整: Number(stock.調整 || 0),
@@ -373,6 +410,7 @@ export const getProductStockTrend = async (req, res) => {
           result.product_name,
           result.location_cd,
           result.date,
+          result.初期,
           result.入庫,
           result.出庫,
           result.調整,
@@ -406,7 +444,7 @@ export const getProductStockTrend = async (req, res) => {
     if (batchInsertValues.length > 0) {
       await db.query(
         `INSERT INTO stock_daily_trends
-         (product_cd, product_name, location_cd, date,
+         (product_cd, product_name, location_cd, date, 初期,
           入庫, 出庫, 調整, 廃棄, 保留, 出荷,
           is_predicted, confirmed_units, forecast_units, 差引累計, updated_at)
          VALUES ?`,
@@ -442,6 +480,8 @@ export const getAllProductStockTrends = async (req, res) => {
       SELECT product_cd
       FROM products
       WHERE product_cd IS NOT NULL
+        AND product_name NOT LIKE '%加工%'
+        AND product_name NOT LIKE '%アーチ%'
     `);
 
     if (rows.length === 0) {
@@ -519,6 +559,8 @@ export const getStockDepletionDates = async (req, res) => {
       SELECT product_cd, product_name, safety_days
       FROM products
       WHERE product_cd IS NOT NULL
+        AND product_name NOT LIKE '%加工%'
+        AND product_name NOT LIKE '%アーチ%'
     `);
 
     if (products.length === 0) {
@@ -789,6 +831,7 @@ function mergeTrendRows(rows) {
 
     // 确保所有字段都是有效的数字
     const numericValues = {
+      初期: Number(row.初期 ?? 0),
       入庫: Number(row.入庫 ?? 0),
       出庫: Number(row.出庫 ?? 0),
       調整: Number(row.調整 ?? 0),
@@ -803,6 +846,7 @@ function mergeTrendRows(rows) {
     const existing = map.get(key);
     if (existing) {
       // 合并数值字段
+      existing.初期 += numericValues.初期;
       existing.入庫 += numericValues.入庫;
       existing.出庫 += numericValues.出庫;
       existing.調整 += numericValues.調整;
@@ -885,6 +929,7 @@ export async function saveDailyTrendsToDB(trendRows) {
         row.product_name || "",
         row.location_cd,
         formatDateToYMD(row.date),
+        row.初期,
         row.入庫,
         row.出庫,
         row.調整,
@@ -901,7 +946,7 @@ export async function saveDailyTrendsToDB(trendRows) {
       await db.query(
         `
         INSERT INTO stock_daily_trends (
-          product_cd, product_name, location_cd, date,
+          product_cd, product_name, location_cd, date, 初期,
           入庫, 出庫, 調整, 廃棄, 保留, 出荷,
           is_predicted, confirmed_units, forecast_units, 差引累計, updated_at
         )
@@ -926,5 +971,49 @@ export const clearStockTrends = async (req, res) => {
   } catch (err) {
     console.error("清空库存推移表失败:", err);
     res.status(500).json({ success: false, message: "テーブルクリア失敗", error: err.message });
+  }
+};
+
+// 获取负库存数据（在庫数<0）
+export const getNegativeStockData = async (req, res) => {
+  const { start_date, end_date } = req.query;
+
+  if (!start_date || !end_date) {
+    return res.status(400).json({ success: false, message: "パラメータ不足" });
+  }
+
+  try {
+    // 查询负库存数据，包含納入先名和製品種類
+    const [rows] = await db.query(
+      `
+      SELECT
+        dd.destination_name as 納入先名,
+        sdt.product_cd as 製品CD,
+        sdt.product_name as 製品名,
+        p.product_type as 製品種類,
+        sdt.date as 日付,
+        sdt.差引累計 as 在庫数
+      FROM stock_daily_trends sdt
+      LEFT JOIN products p ON sdt.product_cd = p.product_cd
+      LEFT JOIN delivery_destinations dd ON p.delivery_destination_cd = dd.destination_cd
+      WHERE sdt.date BETWEEN ? AND ?
+        AND sdt.差引累計 < 0
+      ORDER BY sdt.date DESC, sdt.product_cd
+    `,
+      [start_date, end_date],
+    );
+
+    res.json({
+      success: true,
+      data: rows,
+      total: rows.length,
+    });
+  } catch (err) {
+    console.error("❌ 負在庫データ取得エラー:", err);
+    res.status(500).json({
+      success: false,
+      message: "負在庫データの取得に失敗しました",
+      error: err.message,
+    });
   }
 };

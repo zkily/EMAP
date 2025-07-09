@@ -381,14 +381,14 @@
           </el-table-column>
 
           <el-table-column label="操作" width="200" fixed="right" align="center">
-            <template #default="{ row }">
+            <template #default="scope">
               <div class="table-action-buttons">
                 <el-tooltip content="日別管理" placement="top">
                   <el-button
                     size="small"
                     type="primary"
                     class="compact-btn primary-btn"
-                    @click="handleBatchEdit(row.order_id)"
+                    @click="handleBatchEdit(scope.row.order_id)"
                   >
                     <el-icon><calendar /></el-icon>
                   </el-button>
@@ -396,11 +396,11 @@
                 <el-tooltip content="編集" placement="top">
                   <el-button
                     size="small"
-                    type="warning"
-                    class="compact-btn warning-btn"
-                    @click="handleEditOrder(row)"
+                    type="link"
+                    @click="handleEditOrder(scope.row)"
+                    :icon="Edit"
                   >
-                    <el-icon><edit /></el-icon>
+                    編集
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="削除" placement="top">
@@ -408,7 +408,7 @@
                     size="small"
                     type="danger"
                     class="compact-btn danger-btn"
-                    @click="handleDeleteOrder(row.id)"
+                    @click="handleDeleteOrder(scope.row.id)"
                   >
                     <el-icon><delete /></el-icon>
                   </el-button>

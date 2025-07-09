@@ -1,6 +1,12 @@
 <template>
-  <el-dialog v-model="dialogVisible" title="棚卸項目追加" width="85%" :close-on-click-modal="false" class="add-items-dialog"
-    :before-close="handleBeforeClose">
+  <el-dialog
+    v-model="dialogVisible"
+    title="棚卸項目追加"
+    width="85%"
+    :close-on-click-modal="false"
+    class="add-items-dialog"
+    :before-close="handleBeforeClose"
+  >
     <div class="dialog-content">
       <!-- 搜索区域 -->
       <div class="search-section">
@@ -15,8 +21,15 @@
         </div>
         <el-form :inline="true" class="search-form">
           <el-form-item label="キーワード">
-            <el-input v-model="searchKeyword" placeholder="商品コードまたは商品名を入力" style="width: 320px" @input="handleSearch"
-              @keyup.enter="handleSearch" clearable class="search-input">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="商品コードまたは商品名を入力"
+              style="width: 320px"
+              @input="handleSearch"
+              @keyup.enter="handleSearch"
+              clearable
+              class="search-input"
+            >
               <template #prefix>
                 <el-icon>
                   <Search />
@@ -43,11 +56,18 @@
 
       <!-- 选择信息栏 -->
       <div v-if="selectedItems.length > 0" class="selection-info">
-        <el-alert :title="`${selectedItems.length} 件の商品が選択されています`" type="info" :closable="false" show-icon>
+        <el-alert
+          :title="`${selectedItems.length} 件の商品が選択されています`"
+          type="info"
+          :closable="false"
+          show-icon
+        >
           <template #default>
             <div class="selection-details">
-              <span>選択商品数: <strong>{{ selectedItems.length }}</strong></span>
-              <el-button size="small" type="text" @click="clearSelection" class="clear-btn">
+              <span
+                >選択商品数: <strong>{{ selectedItems.length }}</strong></span
+              >
+              <el-button size="small" type="link" @click="clearSelection" class="clear-btn">
                 すべてクリア
               </el-button>
             </div>
@@ -71,9 +91,17 @@
             <span class="total-count">全 {{ pagination.total }} 件</span>
           </div>
         </div>
-        <el-table v-loading="loading" :data="itemList" @selection-change="handleSelectionChange" border stripe
-          style="width: 100%" class="items-table"
-          :header-cell-style="{ background: '#f8f9fa', color: '#606266', fontWeight: '600' }" empty-text="検索結果がありません">
+        <el-table
+          v-loading="loading"
+          :data="itemList"
+          @selection-change="handleSelectionChange"
+          border
+          stripe
+          style="width: 100%"
+          class="items-table"
+          :header-cell-style="{ background: '#f8f9fa', color: '#606266', fontWeight: '600' }"
+          empty-text="検索結果がありません"
+        >
           <el-table-column type="selection" width="55" />
           <el-table-column prop="code" label="商品コード" width="150" fixed="left">
             <template #default="{ row }">
@@ -87,7 +115,12 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="specification" label="仕様・規格" width="180" show-overflow-tooltip>
+          <el-table-column
+            prop="specification"
+            label="仕様・規格"
+            width="180"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
               <el-text class="specification" type="info">
                 {{ row.specification || '-' }}
@@ -111,9 +144,7 @@
           <el-table-column prop="standardCost" label="標準コスト" width="120" align="right">
             <template #default="{ row }">
               <div class="cost-cell">
-                <el-text type="warning">
-                  ¥{{ formatNumber(row.standardCost, 2) }}
-                </el-text>
+                <el-text type="warning"> ¥{{ formatNumber(row.standardCost, 2) }} </el-text>
               </div>
             </template>
           </el-table-column>
@@ -122,7 +153,12 @@
               <el-tag type="warning" size="small">{{ row.processName }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column v-if="countType === 'wip'" prop="departmentName" label="部門" width="120">
+          <el-table-column
+            v-if="countType === 'wip'"
+            prop="departmentName"
+            label="部門"
+            width="120"
+          >
             <template #default="{ row }">
               <el-tag type="info" size="small">{{ row.departmentName }}</el-tag>
             </template>
@@ -137,9 +173,16 @@
 
       <!-- 分页 -->
       <div class="pagination-section">
-        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.pageSize"
-          :total="pagination.total" :page-sizes="[20, 50, 100]" layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange" @current-change="handleCurrentChange" class="custom-pagination" />
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          class="custom-pagination"
+        />
       </div>
     </div>
 
@@ -150,7 +193,9 @@
             <el-icon>
               <Select />
             </el-icon>
-            <span>選択済み: <strong>{{ selectedItems.length }}</strong> 件</span>
+            <span
+              >選択済み: <strong>{{ selectedItems.length }}</strong> 件</span
+            >
           </div>
         </div>
         <div class="footer-actions">
@@ -160,8 +205,14 @@
             </el-icon>
             キャンセル
           </el-button>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit" size="large" class="submit-btn"
-            :disabled="selectedItems.length === 0">
+          <el-button
+            type="primary"
+            :loading="submitting"
+            @click="handleSubmit"
+            size="large"
+            class="submit-btn"
+            :disabled="selectedItems.length === 0"
+          >
             <el-icon>
               <Plus />
             </el-icon>
@@ -220,7 +271,7 @@ watch(
     if (newVal && props.countId) {
       loadItems()
     }
-  }
+  },
 )
 
 // 监听对话框关闭
@@ -291,7 +342,7 @@ const handleSubmit = async () => {
 
   try {
     submitting.value = true
-    const items = selectedItems.value.map(item => ({
+    const items = selectedItems.value.map((item) => ({
       itemId: item.id,
       itemCode: item.code,
       itemName: item.name,
@@ -316,15 +367,11 @@ const handleSubmit = async () => {
 const handleBeforeClose = async (done: () => void) => {
   if (selectedItems.value.length > 0) {
     try {
-      await ElMessageBox.confirm(
-        '選択した商品がありますが、保存せずに閉じますか？',
-        '確認',
-        {
-          confirmButtonText: '閉じる',
-          cancelButtonText: 'キャンセル',
-          type: 'warning',
-        }
-      )
+      await ElMessageBox.confirm('選択した商品がありますが、保存せずに閉じますか？', '確認', {
+        confirmButtonText: '閉じる',
+        cancelButtonText: 'キャンセル',
+        type: 'warning',
+      })
       done()
     } catch {
       // ユーザーがキャンセルした場合は何もしない
@@ -368,7 +415,9 @@ const getCountTypeLabel = (type?: string) => {
   return typeMap[type || ''] || type
 }
 
-const getCountTypeTagType = (type?: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
+const getCountTypeTagType = (
+  type?: string,
+): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
   const typeMap: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = {
     product: 'success',
     wip: 'warning',
@@ -700,7 +749,6 @@ const getCountTypeTagType = (type?: string): 'success' | 'warning' | 'info' | 'p
     }
 
     .dialog-content {
-
       .search-section,
       .items-section,
       .pagination-section {

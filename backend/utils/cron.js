@@ -9,8 +9,8 @@ import { recalculateAndSnapshotMaterialStock } from "../routes/stock/services/ma
 
 // 可变量化 cron 表达式
 const SCHEDULE_TIMES = [
-  "00 09 * * *", // 09:00 每天
-  "30 16 * * *", // 16:30 每天
+  // "00 09 * * *", // 09:00 每天
+  "30 18 * * *", // 18:30 每天
 ];
 
 // 归档定时任务统一封装

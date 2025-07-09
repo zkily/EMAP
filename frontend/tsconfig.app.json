@@ -32,8 +32,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/views/Shipping/ShippingSuggestionList.vue",
+    // "src/views/Shipping/ShippingSuggestionList.vue",
     "**/PermissionDemo.vue",
-    "src/views/Shipping/components/ApiTest.vue"
+    // "src/views/Shipping/components/ApiTest.vue",
+    // "src/views/Stock/stockTrend/ProductStockTrendTable copy.vue"
   ]
 }

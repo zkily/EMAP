@@ -500,7 +500,7 @@ function createPage(shipping_date, destinations) {
 /* 页面容器 */
 .page-container {
   width: 100%;
-  height: 260mm; /* 调整页面高度 A4-调整后的上下边距 */
+  height: 268mm; /* 调整页面高度 A4-调整后的上下边距 */
   page-break-after: always;
   page-break-inside: avoid;
   display: flex;
@@ -522,7 +522,7 @@ function createPage(shipping_date, destinations) {
   border-bottom: 2px solid #000;
   margin-bottom: 6px;
   page-break-after: avoid;
-  height: 26px; /* 增大头部高度 */
+  height: 22px; /* 增大头部高度 */
   flex-shrink: 0; /* 防止头部被压缩 */
 }
 
@@ -568,7 +568,7 @@ function createPage(shipping_date, destinations) {
   gap: 8px;
   margin-top: 4px;
   margin-bottom: 4px;
-  height: calc(260mm - 26px); /* 页面高度减去头部高度 */
+  height: calc(268mm - 22px); /* 页面高度减去头部高度 */
   /* overflow: hidden;  */
 }
 
@@ -615,7 +615,7 @@ function createPage(shipping_date, destinations) {
 .print-table th {
   font-weight: bold;
   text-align: center;
-  padding: 4px 3px; /* 增大内边距 */
+  padding: 2px 3px; /* 增大内边距 */
   border: 1px solid #000;
   font-size: 15px; /* 字体增大 */
   line-height: 1.2;
@@ -623,7 +623,7 @@ function createPage(shipping_date, destinations) {
 }
 
 .print-table td {
-  padding: 4px 3px; /* 增大内边距 */
+  padding: 2.5px 3px; /* 增大内边距 */
   border: 1px solid #000;
   vertical-align: top;
   font-size: 15px; /* 字体增大 */
@@ -676,17 +676,17 @@ function createPage(shipping_date, destinations) {
   .page-container {
     margin: 0;
     box-shadow: none;
-    height: 260mm !important; /* 强制固定页面高度 */
+    height: 268mm !important; /* 强制固定页面高度 */
     /* overflow: hidden !important; */
   }
 
   .print-body {
-    height: calc(260mm - 26px) !important;
+    height: calc(268mm - 22px) !important;
     /* overflow: hidden !important; */
   }
 
   .column {
-    max-height: calc(260mm - 26px) !important;
+    max-height: calc(268mm - 22px) !important;
     /* overflow: hidden !important; */
   }
 
@@ -697,8 +697,8 @@ function createPage(shipping_date, destinations) {
 
   /* 确保纳入先组不被分页 */
   .destination-group {
-    /* display: block !important; */
-    /* overflow: hidden !important; */
+    display: block !important;
+    overflow: hidden !important;
   }
 }
 

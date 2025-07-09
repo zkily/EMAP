@@ -141,6 +141,7 @@
         style="width: 100%"
         height="400"
         class="unpicked-table"
+        :empty-text="unpickedOrders.length === 0 ? 'データがありません' : ''"
       >
         <el-table-column label="出荷日" width="100" align="center">
           <template #default="{ row }">
@@ -153,23 +154,23 @@
         <el-table-column label="納入先" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="destination-cell">
-              <div class="destination-name">{{ row.destination_name }}</div>
-              <div class="destination-code">{{ row.destination_cd }}</div>
+              <div class="destination-name">{{ row.destination_name || '' }}</div>
+              <div class="destination-code">{{ row.destination_cd || '' }}</div>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="製品" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="product-cell">
-              <div class="product-name">{{ row.product_name }}</div>
-              <div class="product-code">{{ row.product_cd }}</div>
+              <div class="product-name">{{ row.product_name || '' }}</div>
+              <div class="product-code">{{ row.product_cd || '' }}</div>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="箱数" width="80" align="right">
           <template #default="{ row }">
             <div class="number-cell boxes">
-              <span class="number">{{ row.confirmed_boxes.toLocaleString() }}</span>
+              <span class="number">{{ (row.confirmed_boxes || 0).toLocaleString() }}</span>
               <span class="unit">箱</span>
             </div>
           </template>
@@ -177,7 +178,7 @@
         <el-table-column label="本数" width="90" align="right">
           <template #default="{ row }">
             <div class="number-cell units">
-              <span class="number">{{ row.confirmed_units.toLocaleString() }}</span>
+              <span class="number">{{ (row.confirmed_units || 0).toLocaleString() }}</span>
               <span class="unit">本</span>
             </div>
           </template>
@@ -191,14 +192,14 @@
         </el-table-column>
         <el-table-column label="状態" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="getStatusTagType(row.status)" size="small">
-              {{ row.status }}
+            <el-tag :type="getStatusTagType(row.status || '')" size="small">
+              {{ row.status || '未設定' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="曜日" width="60" align="center">
           <template #default="{ row }">
-            <span :class="getWeekdayClass(row.weekday)">{{ row.weekday }}</span>
+            <span :class="getWeekdayClass(row.weekday || '')">{{ row.weekday || '' }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -333,26 +334,83 @@ const searchUnpickedOrders = async () => {
     searchParams.page = pagination.page
     searchParams.pageSize = pagination.pageSize
 
-    const response = await fetchUnpickedOrders(searchParams)
+    const response: any = await fetchUnpickedOrders(searchParams)
 
-    if (response.success) {
-      unpickedOrders.value = response.data.list
-      summary.value = response.data.summary
-      pagination.total = response.data.pagination.total
-      pagination.totalPages = response.data.pagination.totalPages
+    console.log('API Response:', response) // 调试日志
 
-      ElNotification({
-        title: '検索完了',
-        message: `${response.data.total}件の未ピッキングデータが見つかりました`,
-        type: response.data.total > 0 ? 'warning' : 'info',
-        duration: 3000,
-      })
+    /*
+      后端返回格式有两种可能：
+      1. 经过 axios 拦截器解包，直接返回 { list, total, summary, pagination }
+      2. 未解包，返回 { success, message, data:{ list, ... } }
+      以下代码统一兼容两种格式，并在前端过滤掉製品名包含「加工」「アーチ」「料金」的记录。
+    */
+
+    const data = (() => {
+      if (response && Array.isArray(response.list)) {
+        // 情况 1：已解包
+        return response
+      }
+      if (response && response.success === true && response.data) {
+        // 情况 2：未解包
+        return response.data
+      }
+      return {}
+    })()
+
+    // 取得列表并执行关键字过滤
+    const rawList: any[] = Array.isArray(data.list) ? data.list : []
+    const filterKeywords = ['加工', 'アーチ', '料金']
+    const excludedDestinations = ['北九州ケミカル']
+    const filteredList = rawList.filter((item) => {
+      const name = item.product_name || ''
+      if (filterKeywords.some((kw) => name.includes(kw))) return false
+      if (excludedDestinations.some((dest) => (item.destination_name || '').includes(dest)))
+        return false
+      return true
+    })
+
+    unpickedOrders.value = filteredList
+
+    // 统计信息（始终基于过滤后的列表计算，确保一致）
+    const totalOrders = unpickedOrders.value.length
+    const totalBoxes = unpickedOrders.value.reduce(
+      (sum, item) => sum + (Number(item.confirmed_boxes) || 0),
+      0,
+    )
+    const totalUnits = unpickedOrders.value.reduce(
+      (sum, item) => sum + (Number(item.confirmed_units) || 0),
+      0,
+    )
+    const destinationCount = new Set(unpickedOrders.value.map((item) => item.destination_cd)).size
+    const productCount = new Set(unpickedOrders.value.map((item) => item.product_cd)).size
+    const dateCount = new Set(unpickedOrders.value.map((item) => item.shipping_date)).size
+
+    summary.value = {
+      totalOrders,
+      totalBoxes,
+      totalUnits,
+      destinationCount,
+      productCount,
+      dateCount,
     }
-  } catch (error) {
+
+    // 分页信息
+    pagination.total = totalOrders
+    pagination.totalPages = Math.ceil(pagination.total / pagination.pageSize)
+
+    // 通知
+    ElNotification({
+      title: '検索完了',
+      message: `${totalOrders}件の未ピッキングデータが見つかりました`,
+      type: totalOrders > 0 ? 'warning' : 'info',
+      duration: 3000,
+    })
+  } catch (error: any) {
     console.error('未ピッキング検索エラー:', error)
-    ElMessage.error('検索中にエラーが発生しました')
+    ElMessage.error(error?.message || '検索中にエラーが発生しました')
     unpickedOrders.value = []
     summary.value = null
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -381,9 +439,32 @@ const exportData = async () => {
     delete exportParams.page
     delete exportParams.pageSize
 
-    const response = await fetchUnpickedOrders(exportParams)
+    const response: any = await fetchUnpickedOrders(exportParams)
 
-    if (response.success && response.data.list.length > 0) {
+    console.log('Export API Response:', response) // 调试日志
+
+    const data = (() => {
+      if (response && Array.isArray(response.list)) {
+        return response
+      }
+      if (response && response.success === true && response.data) {
+        return response.data
+      }
+      return {}
+    })()
+
+    const rawList: any[] = Array.isArray(data.list) ? data.list : []
+    const filterKeywords = ['加工', 'アーチ', '料金']
+    const excludedDestinations = ['北九州ケミカル']
+    const exportList = rawList.filter((item) => {
+      const name = item.product_name || ''
+      if (filterKeywords.some((kw) => name.includes(kw))) return false
+      if (excludedDestinations.some((dest) => (item.destination_name || '').includes(dest)))
+        return false
+      return true
+    })
+
+    if (exportList.length > 0) {
       // 构建CSV内容
       const headers = [
         '出荷日',
@@ -401,7 +482,7 @@ const exportData = async () => {
 
       const csvContent = [
         headers.join(','),
-        ...response.data.list.map((item) =>
+        ...exportList.map((item) =>
           [
             item.shipping_date,
             item.destination_cd,
@@ -413,16 +494,13 @@ const exportData = async () => {
             item.box_type || '',
             item.status,
             item.weekday,
-            (item.remarks || '').replace(/,/g, '，'), // CSV用にカンマをエスケープ
+            (item.remarks || '').replace(/,/g, '，'),
           ].join(','),
         ),
       ].join('\n')
 
-      // BOMを追加してUTF-8で正しく表示されるようにする
       const bom = '\uFEFF'
       const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8' })
-
-      // ダウンロード
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -432,13 +510,14 @@ const exportData = async () => {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      ElMessage.success(`${response.data.list.length}件のデータをエクスポートしました`)
+      ElMessage.success(`${exportList.length}件のデータをエクスポートしました`)
     } else {
       ElMessage.warning('エクスポートするデータがありません')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('エクスポートエラー:', error)
-    ElMessage.error('エクスポート中にエラーが発生しました')
+    if (error?.isTokenError) return // token已处理
+    ElMessage.error(error?.message || 'エクスポート中にエラーが発生しました')
   } finally {
     exportLoading.value = false
   }
@@ -447,7 +526,12 @@ const exportData = async () => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   try {
-    return new Date(dateStr)
+    const date = new Date(dateStr)
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      return dateStr
+    }
+    return date
       .toLocaleDateString('ja-JP', {
         year: 'numeric',
         month: '2-digit',
@@ -515,7 +599,21 @@ watch(visible, (newVal) => {
     dateRange.value = [lastWeek.toISOString().split('T')[0], today.toISOString().split('T')[0]]
     handleDateRangeChange(dateRange.value)
   }
+
+  // 添加调试信息
+  console.log('Dialog visible changed:', newVal)
+  console.log('Current unpickedOrders:', unpickedOrders.value)
+  console.log('Current summary:', summary.value)
 })
+
+// 监听unpickedOrders数据变化
+watch(
+  unpickedOrders,
+  (newVal) => {
+    console.log('unpickedOrders changed:', newVal)
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>

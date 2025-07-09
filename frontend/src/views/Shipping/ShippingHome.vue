@@ -18,7 +18,7 @@
           </div>
           <div class="header-text">
             <h1 class="main-title">出荷管理システム</h1>
-            <p class="subtitle">出荷・配送・履歴などの管理メニュー</p>
+            <p class="subtitle">出荷・ピッキング・履歴などの管理メニュー</p>
           </div>
         </div>
         <div class="header-stats">
@@ -38,8 +38,13 @@
     <div class="content-container">
       <div class="groups-container">
         <template v-if="Object.keys(groupedRoutes).length">
-          <div v-for="(routes, group, index) in groupedRoutes" :key="group" class="group-section"
-            :class="groupClass(group)" :style="{ animationDelay: `${index * 0.1}s` }">
+          <div
+            v-for="(routes, group, index) in groupedRoutes"
+            :key="group"
+            class="group-section"
+            :class="groupClass(group)"
+            :style="{ animationDelay: `${index * 0.1}s` }"
+          >
             <div class="group-header">
               <div class="group-title-wrapper">
                 <div class="group-icon-wrapper">
@@ -53,9 +58,14 @@
             </div>
 
             <div class="button-grid">
-              <div v-for="(route, routeIndex) in routes" :key="route.name" class="button-card"
+              <div
+                v-for="(route, routeIndex) in routes"
+                :key="route.name"
+                class="button-card"
                 :style="{ animationDelay: `${index * 0.1 + routeIndex * 0.05}s` }"
-                @click="goTo(route.name as RouteRecordName)" tabindex="0">
+                @click="goTo(route.name as RouteRecordName)"
+                tabindex="0"
+              >
                 <div class="card-background"></div>
                 <div class="card-content">
                   <div class="card-icon">
@@ -93,7 +103,7 @@
 
     <!-- 底部信息 -->
     <div class="footer-info">
-      <p>© 2024 Smart Manufacturing System - Shipping Management</p>
+      <p>© 2025 Smart Manufacturing System - Shipping Management</p>
     </div>
 
     <router-view />
@@ -185,11 +195,11 @@ const getGroupIcon = (group: string) => {
 // ルート説明取得
 const getRouteDescription = (routeName: string) => {
   const descriptions: Record<string, string> = {
-    ShippingList: '出荷一覧の管理',
-    ShippingCreate: '出荷の新規登録',
-    ShippingDetail: '出荷詳細情報の確認',
-    ShippingSuggestion: '出荷提案の確認',
-    ShippingHistory: '出荷履歴の確認',
+    ShippingList: '出荷構成表の管理',
+    ShippingOverview: '出荷予定表の管理',
+    ShippingReportPage: '出荷報告書の管理',
+    WeldingShippingManager: 'スライディング溶接出荷予定の管理',
+    ShippingPickingHome: '出荷ピッキング履歴の確認・進捗・履歴の管理',
     ShippingDashboard: '出荷データの可視化',
     ShippingKpi: '出荷KPI指標の確認',
   }
@@ -214,10 +224,24 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 <style scoped>
 .shipping-home {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   position: relative;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  animation: backgroundShift 20s ease-in-out infinite;
+}
+
+@keyframes backgroundShift {
+  0%,
+  100% {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  }
+  33% {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #667eea 100%);
+  }
+  66% {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%);
+  }
 }
 
 /* 动态背景 */
@@ -235,9 +259,16 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 .gradient-orb {
   position: absolute;
   border-radius: 50%;
-  background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  background: linear-gradient(
+    45deg,
+    rgba(102, 126, 234, 0.15),
+    rgba(118, 75, 162, 0.15),
+    rgba(240, 147, 251, 0.1)
+  );
   animation: floatOrb 20s ease-in-out infinite;
   will-change: transform;
+  filter: blur(1px);
+  box-shadow: 0 0 40px rgba(102, 126, 234, 0.2);
 }
 
 .orb-1 {
@@ -266,7 +297,6 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 @keyframes floatOrb {
-
   0%,
   100% {
     transform: translateY(0px) rotate(0deg);
@@ -282,15 +312,34 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 0 0 24px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
+  backdrop-filter: blur(25px);
+  border-radius: 0 0 32px 32px;
   margin: 0 20px 30px;
-  padding: 30px 40px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  padding: 35px 45px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(102, 126, 234, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   position: relative;
   overflow: hidden;
+  animation: headerGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes headerGlow {
+  0% {
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.15),
+      0 4px 16px rgba(102, 126, 234, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    box-shadow:
+      0 16px 48px rgba(0, 0, 0, 0.2),
+      0 8px 24px rgba(102, 126, 234, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
 }
 
 .header-content {
@@ -308,20 +357,45 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .header-icon {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 16px;
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  box-shadow:
+    0 8px 24px rgba(102, 126, 234, 0.4),
+    0 4px 12px rgba(118, 75, 162, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
   animation: iconFloat 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: iconShine 4s ease-in-out infinite;
+}
+
+@keyframes iconShine {
+  0%,
+  100% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  50% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
 }
 
 @keyframes iconFloat {
-
   0%,
   100% {
     transform: translateY(0px);
@@ -337,11 +411,27 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .main-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 6px 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #2c3e50 0%, #667eea 50%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 8px 0;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  letter-spacing: 1px;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  100% {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+  }
 }
 
 .subtitle {
@@ -358,19 +448,67 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 
 .stat-item {
   text-align: center;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-  border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  min-width: 60px;
+  padding: 16px 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.15),
+    rgba(118, 75, 162, 0.15),
+    rgba(240, 147, 251, 0.1)
+  );
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  min-width: 80px;
+  box-shadow:
+    0 4px 16px rgba(102, 126, 234, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.stat-item:hover::before {
+  left: 100%;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6);
 }
 
 .stat-value {
   display: block;
-  font-size: 20px;
-  font-weight: 700;
-  color: #667eea;
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: statPulse 2s ease-in-out infinite;
+}
+
+@keyframes statPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .stat-label {
@@ -395,18 +533,36 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .group-section {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
+  backdrop-filter: blur(25px);
+  border-radius: 20px;
+  padding: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(102, 126, 234, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   animation: slideInUp 0.6s ease-out forwards;
   opacity: 0;
   transform: translateY(30px);
+}
+
+.group-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
+  transition: left 0.8s ease;
+}
+
+.group-section:hover::before {
+  left: 100%;
 }
 
 @keyframes slideInUp {
@@ -417,8 +573,12 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .group-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(102, 126, 234, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: rgba(102, 126, 234, 0.4);
 }
 
 .group-header {
@@ -476,16 +636,19 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .button-card {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+  border-radius: 16px;
+  padding: 24px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(102, 126, 234, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   position: relative;
   overflow: hidden;
   animation: slideInCard 0.6s ease-out forwards;
@@ -517,9 +680,12 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .button-card:hover {
-  transform: translateY(-3px);
-  border-color: #667eea;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(102, 126, 234, 0.6);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .card-content {
@@ -530,18 +696,39 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 18px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  font-size: 20px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 6px 16px rgba(102, 126, 234, 0.4),
+    0 2px 8px rgba(118, 75, 162, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-icon::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: transform 0.6s ease;
+  transform: translateX(-100%) translateY(-100%) rotate(45deg);
+}
+
+.button-card:hover .card-icon::before {
+  transform: translateX(100%) translateY(100%) rotate(45deg);
 }
 
 .animated-icon {
@@ -549,8 +736,11 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .button-card:hover .card-icon {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  transform: scale(1.15) rotate(8deg);
+  box-shadow:
+    0 10px 24px rgba(102, 126, 234, 0.5),
+    0 4px 12px rgba(118, 75, 162, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .card-text {
@@ -559,22 +749,39 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 }
 
 .card-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 4px;
-  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  background: linear-gradient(135deg, #2c3e50 0%, #667eea 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.button-card:hover .card-title {
+  transform: translateX(2px);
 }
 
 .card-description {
-  font-size: 12px;
-  color: #8492a6;
+  font-size: 13px;
+  color: #7c8db5;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+}
+
+.button-card:hover .card-description {
+  color: #667eea;
+  transform: translateX(2px);
 }
 
 .card-arrow {
@@ -586,68 +793,135 @@ const goTo = (routeName: RouteRecordName | undefined) => {
 
 .button-card:hover .card-arrow {
   color: #667eea;
-  transform: translateX(4px);
+  transform: translateX(6px) scale(1.2);
 }
 
-/* 组别颜色主题 */
+/* 组别颜色主题 - 产品相关 */
+.group-product {
+  border-color: rgba(78, 205, 196, 0.3);
+}
+
+.group-product:hover {
+  border-color: rgba(78, 205, 196, 0.6);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(78, 205, 196, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
 .group-product .group-icon-wrapper {
-  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 50%, #4ecdc4 100%);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
 }
 
 .group-product .group-badge {
-  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 50%, #4ecdc4 100%);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
 }
 
 .group-product .card-icon {
-  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 50%, #4ecdc4 100%);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+}
+
+/* 日志履歴相关 */
+.group-log {
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.group-log:hover {
+  border-color: rgba(102, 126, 234, 0.6);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .group-log .group-icon-wrapper {
-  background: linear-gradient(135deg, #4dabf7, #667eea);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .group-log .group-badge {
-  background: linear-gradient(135deg, #4dabf7, #667eea);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .group-log .card-icon {
-  background: linear-gradient(135deg, #4dabf7, #667eea);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 警告异常相关 */
+.group-alert {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.group-alert:hover {
+  border-color: rgba(255, 107, 107, 0.6);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(255, 107, 107, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .group-alert .group-icon-wrapper {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 50%, #ff5722 100%);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
 .group-alert .group-badge {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 50%, #ff5722 100%);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
 .group-alert .card-icon {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 50%, #ff5722 100%);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* 输入编辑相关 */
+.group-input {
+  border-color: rgba(67, 233, 123, 0.3);
+}
+
+.group-input:hover {
+  border-color: rgba(67, 233, 123, 0.6);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(67, 233, 123, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .group-input .group-icon-wrapper {
-  background: linear-gradient(135deg, #69db7c, #667eea);
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%);
+  box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
 }
 
 .group-input .group-badge {
-  background: linear-gradient(135deg, #69db7c, #667eea);
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%);
+  box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);
 }
 
 .group-input .card-icon {
-  background: linear-gradient(135deg, #69db7c, #667eea);
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%);
+  box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
 }
 
+/* 默认分组 */
 .group-default .group-icon-wrapper {
-  background: linear-gradient(135deg, #74b9ff, #0984e3);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .group-default .group-badge {
-  background: linear-gradient(135deg, #74b9ff, #0984e3);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .group-default .card-icon {
-  background: linear-gradient(135deg, #74b9ff, #0984e3);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .footer-info {

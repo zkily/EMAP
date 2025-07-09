@@ -120,18 +120,18 @@ const order: RouteRecordRaw = {
         roles: ['admin', 'manager', 'staff'],
       },
     },
-    {
-      path: '/logs',
-      name: 'OrderLogList',
-      component: () => import('@/views/Order/components/OrderLogList.vue'),
-      meta: {
-        title: '日記',
-        group: 'その他',
-        icon: FileText,
-        permission: 'order:view',
-        roles: ['admin', 'manager', 'staff'],
-      },
-    },
+    // {
+    //   path: '/logs',
+    //   name: 'OrderLogList',
+    //   component: () => import('@/views/Order/components/OrderLogList.vue'),
+    //   meta: {
+    //     title: '日記',
+    //     group: 'その他',
+    //     icon: FileText,
+    //     permission: 'order:view',
+    //     roles: ['admin', 'manager', 'staff'],
+    //   },
+    // },
   ],
 }
 export default order

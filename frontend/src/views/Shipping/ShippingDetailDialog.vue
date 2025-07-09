@@ -50,7 +50,7 @@
               <el-button
                 v-if="!editingShippingNo && isEditable"
                 size="small"
-                type="text"
+                type="link"
                 @click="startEditShippingNo"
                 class="edit-suffix-btn"
               >

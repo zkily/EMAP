@@ -1234,6 +1234,8 @@ const getProductTypeTagType = (type: string) => {
       return 'info' // 蓝色
     case 'サンプル品':
       return 'danger' // 红色
+    case '返却品':
+      return 'danger' // 红色
     case 'その他':
       return 'info' // 灰色（用info代替default）
     default:

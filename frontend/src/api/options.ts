@@ -11,11 +11,27 @@ export interface OptionItem {
 
 // 共通取得函数
 const fetchOptions = async (url: string): Promise<OptionItem[]> => {
-  const res = await axios.get<ApiResponse<OptionItem[]>>(url)
-  if (!res.data.success) {
-    throw new Error(res.data.message || 'オプション取得失敗')
+  try {
+    const res = await axios.get<ApiResponse<OptionItem[]>>(url, {
+      timeout: 10000, // 10秒超时
+    })
+    if (!res.data.success) {
+      throw new Error(res.data.message || 'オプション取得失敗')
+    }
+    return res.data.data || []
+  } catch (error: any) {
+    console.error('获取选项失败:', error)
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('リクエストがタイムアウトしました')
+    }
+    if (error.response?.status === 404) {
+      throw new Error('APIエンドポイントが見つかりません')
+    }
+    if (error.response?.status >= 500) {
+      throw new Error('サーバーエラーが発生しました')
+    }
+    throw new Error(error.message || 'オプション取得に失敗しました')
   }
-  return res.data.data
 }
 
 // 顧客

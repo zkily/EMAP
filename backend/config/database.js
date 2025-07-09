@@ -1,5 +1,6 @@
-const { Sequelize } = require("sequelize");
-require("dotenv").config();
+import { Sequelize } from "sequelize";
+import dotenv from "dotenv";
+dotenv.config();
 
 // 数据库配置
 const config = {
@@ -110,9 +111,4 @@ const syncDatabase = async (force = false) => {
   }
 };
 
-module.exports = {
-  sequelize,
-  testConnection,
-  syncDatabase,
-  config,
-};
+export { sequelize, testConnection, syncDatabase, config };

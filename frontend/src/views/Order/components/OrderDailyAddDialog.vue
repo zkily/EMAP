@@ -148,6 +148,12 @@
                     <span>サンプル品</span>
                   </div>
                 </el-option>
+                <el-option label="返却品" value="返却品">
+                  <div class="option-item">
+                    <el-icon><RefreshLeft /></el-icon>
+                    <span>返却品</span>
+                  </div>
+                </el-option>
                 <el-option label="その他" value="その他">
                   <div class="option-item">
                     <el-icon><More /></el-icon>

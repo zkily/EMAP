@@ -1,57 +1,80 @@
 <template>
-  <el-dialog v-model="visible" title="📉 在庫枯済予測一覧" width="80%" top="5vh" :close-on-click-modal="false">
-    <el-form :inline="true" class="filter-form">
-      <el-form-item label="期間">
-        <el-date-picker v-model="filters.date_range" type="daterange" start-placeholder="開始日" end-placeholder="終了日"
-          format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
-      </el-form-item>
-      <el-form-item label="フィルタ">
-        <el-radio-group v-model="filterMode" size="small">
-          <!-- <el-radio-button :label="'all'">全て</el-radio-button> -->
-          <el-radio-button :label="'depleted'">枯済まで</el-radio-button>
-          <el-radio-button :label="'active'">在庫続行中</el-radio-button>
-          <el-radio-button :label="'low_stock'">安全在庫割れ</el-radio-button>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="fetchData">検索</el-button>
-        <el-button type="success" @click="exportToExcel">📄 Excel</el-button>
-        <el-button type="warning" @click="exportToPDF">📄 PDF</el-button>
-        <el-button @click="handlePrint">🖨️ 印刷</el-button>
-      </el-form-item>
-    </el-form>
+  <el-dialog
+    v-model="visible"
+    title="📉 在庫不足一覧"
+    width="80%"
+    top="5vh"
+    :close-on-click-modal="false"
+  >
+    <div class="filter-section">
+      <el-form :inline="true" class="filter-form">
+        <el-form-item label="期間">
+          <el-date-picker
+            v-model="filters.date_range"
+            type="daterange"
+            start-placeholder="開始日"
+            end-placeholder="終了日"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            class="date-picker"
+          />
+        </el-form-item>
+        <el-form-item>
+          <div class="date-buttons">
+            <el-button size="small" @click="setDateOffset(-1)">📅 -1日</el-button>
+            <el-button size="small" type="primary" @click="setToday">📅 本日</el-button>
+            <el-button size="small" @click="setDateOffset(1)">📅 +1日</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="fetchData" :loading="loading">
+            <el-icon><Search /></el-icon>
+            検索
+          </el-button>
+          <el-button @click="handlePrint" :disabled="sortedNegativeStockList.length === 0">
+            <el-icon><Printer /></el-icon>
+            印刷
+          </el-button>
+        </el-form-item>
+      </el-form>
 
-    <el-table :data="sortedList" border stripe :default-sort="{ prop: 'days_until_depletion', order: 'ascending' }">
-      <el-table-column label="製品CD" prop="product_cd" width="120" sortable />
-      <el-table-column label="製品名" prop="product_name" sortable />
-      <el-table-column label="枯済日" prop="depletion_date" sortable>
+      <!-- 統計情報 -->
+      <div class="stats-card" v-if="sortedNegativeStockList.length > 0">
+        <el-card shadow="never" class="stats-content">
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-label">抽出件数:</span>
+              <span class="stat-value">{{ sortedNegativeStockList.length }}</span>
+              <span class="stat-unit">件</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">対象日数:</span>
+              <span class="stat-value">{{ uniqueDatesCount }}</span>
+              <span class="stat-unit">日</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">対象品目数:</span>
+              <span class="stat-value">{{ uniqueProductsCount }}</span>
+              <span class="stat-unit">品目</span>
+            </div>
+          </div>
+        </el-card>
+      </div>
+    </div>
+
+    <el-table :data="sortedNegativeStockList" border stripe>
+      <el-table-column label="納入先名" prop="納入先名" sortable />
+      <el-table-column label="製品CD" prop="製品CD" width="120" sortable />
+      <el-table-column label="製品名" prop="製品名" sortable />
+      <el-table-column label="製品種類" prop="製品種類" width="130" sortable />
+      <el-table-column label="日付" prop="日付" sortable>
         <template #default="{ row }">
-          <span v-if="row.depletion_date" style="color: red; font-weight: bold">{{ row.depletion_date }}</span>
-          <el-tag type="success" v-else>🚚 在庫続行中</el-tag>
+          <span style="font-weight: bold">{{ row.日付 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="在庫継続終了日" prop="last_positive_date" sortable>
+      <el-table-column label="在庫数" prop="在庫数" sortable>
         <template #default="{ row }">
-          <span>{{ row.last_positive_date || '---' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="最終在庫" prop="final_balance" sortable>
-        <template #default="{ row }">
-          <span :style="{ color: row.final_balance < row.safety_stock ? 'red' : '' }">{{ row.final_balance }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="安全在庫" prop="safety_stock" sortable>
-        <template #default="{ row }">
-          <span>{{ row.safety_stock }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="枯済までの日数" prop="days_until_depletion" sortable>
-        <template #default="{ row }">
-          <span v-if="row.days_until_depletion !== null"
-            :style="{ color: row.days_until_depletion <= 0 ? 'red' : row.days_until_depletion <= 3 ? 'orange' : '' }">
-            {{ row.days_until_depletion }} 日
-          </span>
-          <span v-else>---</span>
+          <span style="color: red; font-weight: bold">{{ row.在庫数 }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -59,126 +82,323 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import request from '@/utils/request'
+import { ref, computed, watch } from 'vue'
+import { getNegativeStockData } from '@/api/stock/productStock'
 import { ElMessage } from 'element-plus'
-import * as XLSX from 'xlsx'
-import { saveAs } from 'file-saver'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { Search, Printer } from '@element-plus/icons-vue'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', val: boolean): void }>()
 
 const visible = computed({
   get: () => props.modelValue,
-  set: val => emit('update:modelValue', val)
+  set: (val) => emit('update:modelValue', val),
 })
 
 const filters = ref({ date_range: getDefaultRange() })
+const loading = ref(false)
+
 function getDefaultRange(): [string, string] {
   const today = new Date()
-  const past = new Date()
-  past.setDate(today.getDate() - 30)
   const format = (d: Date) => d.toISOString().slice(0, 10)
-  return [format(past), format(today)]
+  // デフォルトは当日に設定
+  return [format(today), format(today)]
 }
 
-const filterMode = ref<'all' | 'depleted' | 'active' | 'low_stock'>('all')
-const depletionList = ref<any[]>([])
+// 日付操作関数
+const setToday = () => {
+  const today = new Date()
+  const format = (d: Date) => d.toISOString().slice(0, 10)
+  filters.value.date_range = [format(today), format(today)]
+}
 
-const filteredList = computed(() => {
-  return depletionList.value.filter(item => {
-    if (filterMode.value === 'depleted') return !!item.depletion_date
-    if (filterMode.value === 'active') return !item.depletion_date
+const setDateOffset = (offset: number) => {
+  const [start, end] = filters.value.date_range
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+
+  startDate.setDate(startDate.getDate() + offset)
+  endDate.setDate(endDate.getDate() + offset)
+
+  const format = (d: Date) => d.toISOString().slice(0, 10)
+  filters.value.date_range = [format(startDate), format(endDate)]
+}
+
+const negativeStockList = ref<any[]>([])
+
+// 按製品名排序的数据
+const sortedNegativeStockList = computed(() => {
+  return [...negativeStockList.value].sort((a, b) => {
+    const nameA = a.製品名 || ''
+    const nameB = b.製品名 || ''
+    return nameA.localeCompare(nameB, 'ja', { numeric: true })
   })
 })
 
-const sortedList = computed(() => {
-  return [...filteredList.value].sort((a, b) => {
-    if (a.days_until_depletion === null) return 1
-    if (b.days_until_depletion === null) return -1
-    return a.days_until_depletion - b.days_until_depletion
-  })
+// 統計計算
+const uniqueDatesCount = computed(() => {
+  const dates = new Set(negativeStockList.value.map((item) => item.日付))
+  return dates.size
+})
+
+const uniqueProductsCount = computed(() => {
+  const products = new Set(negativeStockList.value.map((item) => item.製品CD))
+  return products.size
 })
 
 const fetchData = async () => {
   const [start, end] = filters.value.date_range
+  loading.value = true
   try {
-    const res = await request.get('/api/stock/stock-depletion-dates', {
-      params: { start_date: start, end_date: end }
+    const res = await getNegativeStockData({
+      start_date: start,
+      end_date: end,
     })
-    depletionList.value = res
+    console.log('API応答:', res) // デバッグログ
+
+    // バックエンドから返されるデータ構造に応じてデータを処理
+    if (Array.isArray(res)) {
+      negativeStockList.value = res
+    } else if (res && Array.isArray(res.data)) {
+      negativeStockList.value = res.data
+    } else {
+      negativeStockList.value = []
+      console.warn('有効なデータ配列が見つかりません:', res)
+    }
   } catch (err: any) {
+    console.error('在庫不足データの取得に失敗しました:', err)
     ElMessage.error(err?.message || '取得失敗')
+  } finally {
+    loading.value = false
   }
 }
 
-const exportToExcel = () => {
-  const data = sortedList.value.map(row => ({
-    製品CD: row.product_cd,
-    製品名: row.product_name,
-    枯渇日: row.depletion_date || '在庫継続中',
-    最終在庫: row.final_balance,
-    '枯渇まで(日)': row.days_until_depletion ?? '---'
-  }))
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, '在庫枯渇予測')
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-  saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'stock_depletion_list.xlsx')
-}
-
-const exportToPDF = () => {
-  const doc = new jsPDF()
-  doc.text('在庫枯渇予測一覧', 14, 15)
-  autoTable(doc, {
-    startY: 20,
-    head: [['製品CD', '製品名', '枯渇日', '最終在庫', '枯渇まで(日)']],
-    body: sortedList.value.map(r => [
-      r.product_cd,
-      r.product_name,
-      r.depletion_date || '在庫継続中',
-      r.final_balance,
-      r.days_until_depletion ?? '---'
-    ])
-  })
-  doc.save('stock_depletion_list.pdf')
-}
+// ダイアログが開かれたときに自動でデータを取得
+watch(visible, (newVal) => {
+  if (newVal) {
+    fetchData()
+  }
+})
 
 const handlePrint = () => {
-  const printWindow = window.open('', '', 'width=900,height=700')
+  const printWindow = window.open('', '', 'width=1200,height=800')
   if (!printWindow) return
 
+  // 日付でデータをグループ化（製品名でソート済みのデータを使用）
+  const groupedData = sortedNegativeStockList.value.reduce((groups: any, item) => {
+    const date = item.日付
+    if (!groups[date]) {
+      groups[date] = []
+    }
+    groups[date].push(item)
+    return groups
+  }, {})
+
+  // 各日付グループ内でも製品名でソート
+  Object.keys(groupedData).forEach((date) => {
+    groupedData[date].sort((a: any, b: any) => {
+      const nameA = a.製品名 || ''
+      const nameB = b.製品名 || ''
+      return nameA.localeCompare(nameB, 'ja', { numeric: true })
+    })
+  })
+
+  // 日付でソート
+  const sortedDates = Object.keys(groupedData).sort()
+
   const html = `
-    <html><head><title>在庫枯渇予測</title>
-    <style>
-      table { border-collapse: collapse; width: 100%; font-size: 13px }
-      th, td { border: 1px solid #ccc; padding: 6px; text-align: left }
-      th { background-color: #f0f0f0 }
-      .red { color: red; font-weight: bold }
-      .orange { color: orange; font-weight: bold }
-    </style></head><body>
-    <h2>📉 在庫枯渇予測一覧</h2>
-    <table>
-      <thead>
-        <tr><th>製品CD</th><th>製品名</th><th>枯渇日</th><th>最終在庫</th><th>枯渇まで</th></tr>
-      </thead>
-      <tbody>
-        ${sortedList.value.map(r => `
-          <tr>
-            <td>${r.product_cd}</td>
-            <td>${r.product_name}</td>
-            <td class="${r.depletion_date ? 'red' : ''}">${r.depletion_date || '在庫継続中'}</td>
-            <td>${r.final_balance}</td>
-            <td class="${r.days_until_depletion <= 0 ? 'red' : r.days_until_depletion <= 3 ? 'orange' : ''}">
-              ${r.days_until_depletion ?? '---'}日
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-    </body></html>`
+    <html>
+    <head>
+      <title>在庫不足一覧</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'MS Gothic', monospace;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          margin: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 15px;
+        }
+        .title {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        .print-date {
+          font-size: 14px;
+          color: #666;
+        }
+        .stats-summary {
+          background-color: #f5f5f5;
+          padding: 15px;
+          margin-bottom: 25px;
+          border-radius: 5px;
+          border: 1px solid #ddd;
+        }
+        .stats-row {
+          display: flex;
+          justify-content: space-around;
+          flex-wrap: wrap;
+        }
+        .stat-item {
+          text-align: center;
+          margin: 5px;
+        }
+        .stat-label {
+          font-size: 11px;
+          color: #666;
+          display: block;
+        }
+        .stat-value {
+          font-size: 18px;
+          font-weight: bold;
+          color: #e74c3c;
+        }
+        .date-group {
+          margin-bottom: 40px;
+          page-break-inside: avoid;
+        }
+        .date-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 12px 20px;
+          font-size: 16px;
+          font-weight: bold;
+          margin-bottom: 15px;
+          border-radius: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .date-count {
+          background-color: rgba(255,255,255,0.2);
+          padding: 4px 12px;
+          border-radius: 15px;
+          font-size: 14px;
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          font-size: 11px;
+          margin-bottom: 20px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        th {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          color: #495057;
+          padding: 12px 8px;
+          text-align: left;
+          font-weight: bold;
+          border-bottom: 2px solid #dee2e6;
+        }
+        td {
+          padding: 8px;
+          border-bottom: 1px solid #dee2e6;
+          vertical-align: middle;
+        }
+        tr:nth-child(even) td {
+          background-color: #f8f9fa;
+        }
+        tr:hover td {
+          background-color: #e8f4f8;
+        }
+        .red {
+          color: #e74c3c;
+          font-weight: bold;
+          background-color: #fdf2f2;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+        .product-cd {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+        }
+        .product-type {
+          background-color: #e3f2fd;
+          padding: 2px 6px;
+          border-radius: 12px;
+          font-size: 10px;
+          color: #1976d2;
+        }
+        @media print {
+          body { margin: 15px; }
+          .date-group { page-break-inside: avoid; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="title">📉 在庫不足一覧</div>
+        <div class="print-date">印刷日時: ${new Date().toLocaleString('ja-JP')}</div>
+      </div>
+
+      <div class="stats-summary">
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">総件数</span>
+            <span class="stat-value">${sortedNegativeStockList.value.length}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">対象日数</span>
+            <span class="stat-value">${sortedDates.length}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">対象品目数</span>
+            <span class="stat-value">${uniqueProductsCount.value}</span>
+          </div>
+        </div>
+      </div>
+
+      ${sortedDates
+        .map((date) => {
+          const items = groupedData[date]
+          return `
+          <div class="date-group">
+            <div class="date-header">
+              <span>📅 ${date}</span>
+              <span class="date-count">${items.length}件</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>納入先名</th>
+                  <th>製品CD</th>
+                  <th>製品名</th>
+                  <th>製品種類</th>
+                  <th>在庫数</th>
+                </tr>
+              </thead>
+              <tbody>
+                                 ${items
+                                   .map(
+                                     (item: any) => `
+                  <tr>
+                    <td>${item.納入先名 || '-'}</td>
+                    <td class="product-cd">${item.製品CD}</td>
+                    <td>${item.製品名}</td>
+                    <td><span class="product-type">${item.製品種類 || '-'}</span></td>
+                    <td class="red">${item.在庫数}</td>
+                  </tr>
+                `,
+                                   )
+                                   .join('')}
+              </tbody>
+            </table>
+          </div>
+        `
+        })
+        .join('')}
+    </body>
+    </html>`
 
   printWindow.document.write(html)
   printWindow.document.close()
@@ -186,47 +406,189 @@ const handlePrint = () => {
 }
 </script>
 
-
 <style scoped>
+.filter-section {
+  margin-bottom: 10px;
+}
+
 .filter-form {
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+  color: white;
+  margin-bottom: 10px;
+}
+
+.filter-form :deep(.el-form-item__label) {
+  color: white !important;
+  font-weight: 600;
+}
+
+.date-picker {
+  min-width: 280px;
+}
+
+.date-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-buttons .el-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.date-buttons .el-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.date-buttons .el-button--primary {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .el-form-item {
-  margin-right: 16px;
+  margin-right: 24px;
+}
+
+.stats-card {
+  margin-bottom: 10px;
+}
+
+.stats-content {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stats-content :deep(.el-card__body) {
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 15px 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+  flex: 1;
+  min-width: 120px;
+}
+
+.stat-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #e74c3c;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-unit {
+  font-size: 12px;
+  color: #adb5bd;
+  font-weight: 500;
 }
 
 .el-dialog__body {
-  padding-top: 10px;
+  padding: 15px;
+  background-color: #f8f9fa;
 }
 
 .el-table {
   font-size: 13px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: none;
 }
 
-.el-table th {
-  background-color: #409eff;
-  color: white;
+.el-table :deep(.el-table__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.el-table :deep(.el-table__header th) {
+  background: transparent !important;
+  color: rgb(15, 12, 12) !important;
   font-weight: bold;
+  border: none;
+  padding: 16px 12px;
 }
 
-.el-table td {
+.el-table :deep(.el-table__body tr) {
+  transition: all 0.3s ease;
+}
+
+.el-table :deep(.el-table__body tr:hover) {
+  background-color: #e3f2fd !important;
+  transform: scale(1.01);
+}
+
+.el-table :deep(.el-table__body td) {
   background-color: #fcfcfc;
+  border-color: #e9ecef;
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+.el-table :deep(.el-table__body tr:nth-child(even) td) {
+  background-color: #f8f9fa;
 }
 
 .el-button {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.el-radio-button__inner {
-  border-radius: 6px !important;
-  padding: 6px 12px !important;
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.el-button--primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a3093 100%);
+}
+
+.el-button:disabled {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 /* 打印样式 */
@@ -242,6 +604,28 @@ const handlePrint = () => {
     position: absolute;
     left: 0;
     top: 0;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .filter-form {
+    padding: 16px;
+  }
+
+  .stats-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-item {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .date-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 </style>

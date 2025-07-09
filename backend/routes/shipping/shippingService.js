@@ -1004,9 +1004,11 @@ export async function getShippingOverview(req, res) {
         si.confirmed_units AS units,
         si.box_type,
         si.delivery_date,
-        si.shipping_no
+        si.shipping_no,
+        od.product_type  
       FROM
         shipping_items si
+      LEFT JOIN order_daily od ON si.shipping_no_p = od.shipping_no
       WHERE
         si.shipping_date BETWEEN ? AND ?
     `;
@@ -1041,6 +1043,71 @@ export async function getShippingOverview(req, res) {
     res.json(formattedData);
   } catch (error) {
     console.error("getShippingOverviewでエラー:", error);
+    res.status(500).json(standardResponse(false, "サーバーエラーが発生しました"));
+  }
+}
+
+// 出荷便リストデータ取得 (获取出荷便列表数据)
+export async function getShippingList(req, res) {
+  try {
+    const { date_from, date_to, destination_cds } = req.query;
+
+    if (!date_from || !date_to) {
+      return res.status(400).json({ success: false, message: "日付範囲を指定してください" });
+    }
+
+    let query = `
+      SELECT
+        si.shipping_date,
+        si.destination_cd,
+        si.destination_name,
+        si.product_name,
+        si.confirmed_boxes AS quantity,
+        si.confirmed_units AS units,
+        si.box_type,
+        si.delivery_date,
+        si.shipping_no,
+        od.product_type,
+        -- No字段：取出荷No的后两位
+        RIGHT(si.shipping_no, 2) AS no
+      FROM
+        shipping_items si
+      LEFT JOIN order_daily od ON si.shipping_no_p = od.shipping_no
+      WHERE
+        si.shipping_date BETWEEN ? AND ?
+    `;
+    const params = [date_from, date_to];
+
+    if (destination_cds) {
+      const cds = destination_cds
+        .split(",")
+        .map((cd) => cd.trim())
+        .filter(Boolean);
+      if (cds.length > 0) {
+        query += ` AND si.destination_cd IN (${cds.map(() => "?").join(",")})`;
+        params.push(...cds);
+      }
+    }
+
+    // 按出荷No排序，然后按納入先名称和产品名称排序
+    query += ` ORDER BY si.shipping_no, si.destination_name, si.product_name;`;
+
+    const [rows] = await db.query(query, params);
+
+    // 日付を 'YYYY-MM-DD' 形式にフォーマット
+    const formattedData = rows.map((row) => ({
+      ...row,
+      shipping_date: row.shipping_date
+        ? new Date(row.shipping_date).toISOString().split("T")[0]
+        : null,
+      delivery_date: row.delivery_date
+        ? new Date(row.delivery_date).toISOString().split("T")[0]
+        : null,
+    }));
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("getShippingListでエラー:", error);
     res.status(500).json(standardResponse(false, "サーバーエラーが発生しました"));
   }
 }

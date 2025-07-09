@@ -18,13 +18,19 @@
           </div>
           <div class="header-text">
             <h1 class="main-title">入出庫実績履歴一覧</h1>
-            <p class="subtitle">在庫の入出庫履歴を管理・確認できます</p>
+            <p class="subtitle">CSV在庫ファイルから入出庫履歴を取込・管理できます</p>
           </div>
         </div>
         <div class="header-actions">
-          <el-button type="primary" @click="handleImport" :loading="loading" :icon="DocumentAdd" class="import-button"
-            size="large">
-            Excel取込(ハンディターミナル)
+          <el-button
+            type="primary"
+            @click="handleImport"
+            :loading="loading"
+            :icon="DocumentAdd"
+            class="import-button"
+            size="large"
+          >
+            CSV データ取込
           </el-button>
         </div>
       </div>
@@ -35,17 +41,47 @@
       <!-- 导入状态提示 -->
       <transition name="fade-slide" appear>
         <div v-if="importStatus !== 'idle'" class="import-status-container">
-          <el-alert v-if="importStatus === 'reading'" title="📂 Excel ファイル読込中..." type="info" show-icon
-            class="status-alert" />
-          <el-alert v-if="importStatus === 'saving'" title="📤 データベース登録中..." type="warning" show-icon
-            class="status-alert" />
-          <el-alert v-if="importStatus === 'done'" title="✅ 取込完了" type="success" show-icon class="status-alert" />
-          <el-alert v-if="importStatus === 'error'" title="❌ エラーが発生しました" type="error" show-icon class="status-alert" />
+          <el-alert
+            v-if="importStatus === 'reading'"
+            title="📂 CSV ファイル読込中..."
+            type="info"
+            show-icon
+            class="status-alert"
+          />
+          <el-alert
+            v-if="importStatus === 'saving'"
+            title="📤 データベース登録中..."
+            type="warning"
+            show-icon
+            class="status-alert"
+          />
+          <el-alert
+            v-if="importStatus === 'done'"
+            title="✅ CSV取込完了"
+            type="success"
+            show-icon
+            class="status-alert"
+          />
+          <el-alert
+            v-if="importStatus === 'error'"
+            title="❌ エラーが発生しました"
+            type="error"
+            show-icon
+            class="status-alert"
+          />
 
           <el-progress
-            v-if="(importStatus as ImportStatus) !== 'idle' && importStatus !== 'done' && importStatus !== 'error'"
-            :percentage="importProgress" :text-inside="true" class="import-progress" :stroke-width="12"
-            :color="progressColor" />
+            v-if="
+              (importStatus as ImportStatus) !== 'idle' &&
+              importStatus !== 'done' &&
+              importStatus !== 'error'
+            "
+            :percentage="importProgress"
+            :text-inside="true"
+            class="import-progress"
+            :stroke-width="12"
+            :color="progressColor"
+          />
         </div>
       </transition>
 
@@ -75,25 +111,58 @@
 
           <div class="filter-row">
             <el-form-item label="キーワード" class="filter-item">
-              <el-input v-model="filters.keyword" placeholder="対象CD / 名称で検索" clearable class="filter-input"
-                :prefix-icon="Search" />
+              <el-input
+                v-model="filters.keyword"
+                placeholder="対象CD / 名称で検索"
+                clearable
+                class="filter-input"
+                :prefix-icon="Search"
+              />
             </el-form-item>
 
             <el-form-item label="保管場所" class="filter-item">
-              <el-select v-model="filters.location_cd" placeholder="選択" clearable class="filter-select">
-                <el-option v-for="item in locationOptions" :key="item.cd" :label="item.name" :value="item.cd" />
+              <el-select
+                v-model="filters.location_cd"
+                placeholder="選択"
+                clearable
+                class="filter-select"
+              >
+                <el-option
+                  v-for="item in locationOptions"
+                  :key="item.cd"
+                  :label="item.name"
+                  :value="item.cd"
+                />
               </el-select>
             </el-form-item>
 
             <el-form-item label="操作種別" class="filter-item">
-              <el-select v-model="filters.transaction_type" placeholder="選択" clearable class="filter-select">
-                <el-option v-for="item in transactionTypeOptions" :key="item.cd" :label="item.name" :value="item.cd" />
+              <el-select
+                v-model="filters.transaction_type"
+                placeholder="選択"
+                clearable
+                class="filter-select"
+              >
+                <el-option
+                  v-for="item in transactionTypeOptions"
+                  :key="item.cd"
+                  :label="item.name"
+                  :value="item.cd"
+                />
               </el-select>
             </el-form-item>
 
             <el-form-item label="操作日" class="filter-item">
-              <el-date-picker v-model="filters.date_range" type="daterange" range-separator="～" start-placeholder="開始日"
-                end-placeholder="終了日" value-format="YYYY-MM-DD" unlink-panels class="date-picker" />
+              <el-date-picker
+                v-model="filters.date_range"
+                type="daterange"
+                range-separator="～"
+                start-placeholder="開始日"
+                end-placeholder="終了日"
+                value-format="YYYY-MM-DD"
+                unlink-panels
+                class="date-picker"
+              />
             </el-form-item>
           </div>
 
@@ -124,13 +193,24 @@
           </div>
         </template>
 
-        <el-table :data="logList" border stripe highlight-current-row class="data-table" v-loading="loading"
-          :loading-text="loadingText" element-loading-spinner="el-icon-loading"
-          element-loading-background="rgba(0, 0, 0, 0.8)">
-
+        <el-table
+          :data="logList"
+          border
+          stripe
+          highlight-current-row
+          class="data-table"
+          v-loading="loading"
+          :loading-text="loadingText"
+          element-loading-spinner="el-icon-loading"
+          element-loading-background="rgba(0, 0, 0, 0.8)"
+        >
           <el-table-column label="在庫種別" prop="stock_type" width="100" align="center">
             <template #default="scope">
-              <el-tag :type="getStockTypeColor(scope.row.stock_type)" effect="light" class="stock-type-tag">
+              <el-tag
+                :type="getStockTypeColor(scope.row.stock_type)"
+                effect="light"
+                class="stock-type-tag"
+              >
                 {{ scope.row.stock_type }}
               </el-tag>
             </template>
@@ -146,8 +226,19 @@
             <template #default="scope">
               <div class="target-name-cell">
                 <span
-                  :class="getTargetName(scope.row.stock_type, scope.row.target_cd, scope.row.target_name) === scope.row.target_cd ? 'no-name-placeholder' : 'target-name'">
-                  {{ getTargetName(scope.row.stock_type, scope.row.target_cd, scope.row.target_name) }}
+                  :class="
+                    getTargetName(
+                      scope.row.stock_type,
+                      scope.row.target_cd,
+                      scope.row.target_name,
+                    ) === scope.row.target_cd
+                      ? 'no-name-placeholder'
+                      : 'target-name'
+                  "
+                >
+                  {{
+                    getTargetName(scope.row.stock_type, scope.row.target_cd, scope.row.target_name)
+                  }}
                 </span>
               </div>
             </template>
@@ -161,8 +252,11 @@
 
           <el-table-column label="操作種別" prop="transaction_type" width="100" align="center">
             <template #default="scope">
-              <el-tag :type="getTransactionTypeColor(scope.row.transaction_type)" effect="dark"
-                class="transaction-type-tag">
+              <el-tag
+                :type="getTransactionTypeColor(scope.row.transaction_type)"
+                effect="dark"
+                class="transaction-type-tag"
+              >
                 {{ scope.row.transaction_type }}
               </el-tag>
             </template>
@@ -170,7 +264,7 @@
 
           <el-table-column label="数量" prop="quantity" width="90" align="center">
             <template #default="scope">
-              <div class="quantity-cell" :class="{ 'negative': scope.row.quantity < 0 }">
+              <div class="quantity-cell" :class="{ negative: scope.row.quantity < 0 }">
                 {{ scope.row.quantity }}
               </div>
             </template>
@@ -201,8 +295,13 @@
 
           <el-table-column label="操作" fixed="right" width="100" align="center">
             <template #default="scope">
-              <el-button size="small" type="danger" @click="handleDelete(scope.row)" :icon="Delete"
-                class="delete-button">
+              <el-button
+                size="small"
+                type="danger"
+                @click="handleDelete(scope.row)"
+                :icon="Delete"
+                class="delete-button"
+              >
                 削除
               </el-button>
             </template>
@@ -211,9 +310,17 @@
 
         <!-- 分页 -->
         <div class="pagination-wrapper">
-          <el-pagination layout="total, sizes, prev, pager, next, jumper" :total="pagination.total"
-            :page-size="pagination.pageSize" :current-page="pagination.page" :page-sizes="[10, 20, 50, 100]"
-            @size-change="handleSizeChange" @current-change="handlePageChange" background class="custom-pagination" />
+          <el-pagination
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="pagination.total"
+            :page-size="pagination.pageSize"
+            :current-page="pagination.page"
+            :page-sizes="[10, 20, 50, 100]"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+            background
+            class="custom-pagination"
+          />
         </div>
       </el-card>
     </div>
@@ -234,26 +341,43 @@ import { DocumentAdd, Search, RefreshLeft } from '@element-plus/icons-vue'
 
 const getStockTypeColor = (type: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
   switch (type) {
-    case '製品': return 'primary'
-    case '材料': return 'success'
-    case '部品': return 'warning'
-    case '仕掛品': return 'info'
-    default: return 'danger'
+    case '製品':
+      return 'primary'
+    case '材料':
+      return 'success'
+    case '部品':
+      return 'warning'
+    case '仕掛品':
+      return 'info'
+    default:
+      return 'danger'
   }
 }
 
-const getTransactionTypeColor = (type: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
+const getTransactionTypeColor = (
+  type: string,
+): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
   switch (type) {
-    case '入庫': return 'success'
-    case '出庫': return 'info'
-    case '調整': return 'warning'
-    case '廃棄': return 'danger'
-    case '保留': return 'info'
-    case '実績': return 'success'
-    case '不良': return 'danger'
-    case '取消': return 'info'
-    case '出荷': return 'primary'
-    default: return 'info'
+    case '入庫':
+      return 'success'
+    case '出庫':
+      return 'info'
+    case '調整':
+      return 'warning'
+    case '廃棄':
+      return 'danger'
+    case '保留':
+      return 'info'
+    case '実績':
+      return 'success'
+    case '不良':
+      return 'danger'
+    case '取消':
+      return 'info'
+    case '出荷':
+      return 'primary'
+    default:
+      return 'info'
   }
 }
 
@@ -288,10 +412,7 @@ const filters = ref({
   keyword: '',
   location_cd: '',
   transaction_type: '',
-  date_range: [
-    dayjs().subtract(6, 'day').format('YYYY-MM-DD'),
-    dayjs().format('YYYY-MM-DD'),
-  ],
+  date_range: [dayjs().subtract(6, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
 })
 
 const pagination = ref({
@@ -351,25 +472,25 @@ const handleImport = async () => {
   importStatus.value = 'reading'
 
   try {
-    // 📂 模拟阶段1：読み込み中
-    importProgress.value = 10
-    await sleep(300) // 可选：模拟延迟
-    // ❗ 改成 axios 原生调用，绕过封装的 request
+    // 📂 CSV文件読み込み段階
+    importProgress.value = 20
+    await sleep(300)
+
     const rawRes = await request.post<ApiResponse>('/api/stock/import-stock')
 
     importStatus.value = 'saving'
-    importProgress.value = 50
-    await sleep(300)
+    importProgress.value = 70
+    await sleep(500)
     await fetchLogs()
 
     // ✅ 完了
     importProgress.value = 100
     importStatus.value = 'done'
-    ElMessage.success('✅ ' + (rawRes?.message ?? 'インポート成功'))
+    ElMessage.success('✅ ' + (rawRes?.message ?? 'CSV取込成功'))
   } catch (err: unknown) {
     importStatus.value = 'error'
     const apiError = err as ApiError
-    const msg = apiError?.response?.data?.message || apiError?.message || 'インポート失敗'
+    const msg = apiError?.response?.data?.message || apiError?.message || 'CSV取込失敗'
     ElMessage.error('❌ ' + msg)
   } finally {
     setTimeout(() => {
@@ -379,15 +500,13 @@ const handleImport = async () => {
   }
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const handleDelete = async (row: StockLog) => {
   try {
-    await ElMessageBox.confirm(
-      `本当に削除しますか？ 対象CD: ${row.target_cd}`,
-      '確認',
-      { type: 'warning' }
-    )
+    await ElMessageBox.confirm(`本当に削除しますか？ 対象CD: ${row.target_cd}`, '確認', {
+      type: 'warning',
+    })
     loading.value = true
     await request.delete(`/api/stock/logs/${row.id}`)
     ElMessage.success('✅ 削除しました')
@@ -395,7 +514,9 @@ const handleDelete = async (row: StockLog) => {
   } catch (err: unknown) {
     if (err !== 'cancel') {
       const apiError = err as ApiError
-      ElMessage.error('❌ 削除失敗: ' + (apiError?.response?.data?.message || apiError?.message || ''))
+      ElMessage.error(
+        '❌ 削除失敗: ' + (apiError?.response?.data?.message || apiError?.message || ''),
+      )
     }
   } finally {
     loading.value = false
@@ -433,10 +554,7 @@ const resetFilters = () => {
     keyword: '',
     location_cd: '',
     transaction_type: '',
-    date_range: [
-      dayjs().subtract(6, 'day').format('YYYY-MM-DD'),
-      dayjs().format('YYYY-MM-DD'),
-    ],
+    date_range: [dayjs().subtract(6, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
   }
   pagination.value.page = 1
   fetchLogs()
@@ -482,7 +600,7 @@ const getTargetName = (stockType: string, targetCd: string, originalName?: strin
       return targetCd // 未知类型，返回CD
   }
 
-  const found = options.find(item => item.cd === targetCd)
+  const found = options.find((item) => item.cd === targetCd)
   return found?.name || targetCd
 }
 
@@ -492,7 +610,7 @@ const loadAllOptions = async () => {
     const [products, materials, components] = await Promise.all([
       getProductOptions(),
       getMaterialOptions(),
-      getComponentOptions()
+      getComponentOptions(),
     ])
     productOptions.value = products
     materialOptions.value = materials
@@ -563,7 +681,6 @@ onMounted(async () => {
 }
 
 @keyframes floatOrb {
-
   0%,
   100% {
     transform: translateY(0px) rotate(0deg);
@@ -634,7 +751,6 @@ onMounted(async () => {
 }
 
 @keyframes iconPulse {
-
   0%,
   100% {
     transform: scale(1);
